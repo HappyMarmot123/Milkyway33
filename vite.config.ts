@@ -14,6 +14,13 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 3333,
+    proxy: {
+      // Forward API calls to the local FastAPI backend during dev.
+      '/api': {
+        target: 'http://localhost:8888',
+        changeOrigin: true,
+      },
+    },
   },
   resolve: {
     alias: {

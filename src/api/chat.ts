@@ -1,6 +1,9 @@
 import type { ChatEvent, ChatPromptConfig } from '@/features/chat/types';
 
-const API_BASE_URL = 'http://localhost:8888/api/v1';
+// In production (Vercel) the API is same-origin at /api/v1.
+// In local dev, Vite proxies /api to the FastAPI server (see vite.config.ts).
+// Override with VITE_API_BASE_URL if the backend lives elsewhere.
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api/v1';
 
 /**
  * Streaming chat API client

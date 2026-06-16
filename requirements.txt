@@ -1,0 +1,4 @@
+fastapi>=0.103.2
+google-genai>=1.47.0
+python-dotenv>=1.2.1
+requests>=2.32.5
