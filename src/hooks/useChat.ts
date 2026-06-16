@@ -144,9 +144,7 @@ export function useChat() {
 
             // Save token usage
             if (event.usage_metadata) {
-              const inputTokens = event.usage_metadata.prompt_token_count || 0;
-              const outputTokens = event.usage_metadata.candidates_token_count || 0;
-              await chatRepository.addTokenUsage(inputTokens, outputTokens);
+              await chatRepository.addGeminiUsage(event.usage_metadata, event.model_used);
             }
 
             setStatus('idle');

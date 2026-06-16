@@ -1,9 +1,22 @@
 
 from google import genai
-from typing import AsyncIterator
+from typing import AsyncIterator, Optional
 import json
 import asyncio
 from app.core.config import settings
+
+def serialize_usage_metadata(usage_metadata) -> Optional[dict]:
+    if not usage_metadata:
+        return None
+
+    return {
+        "prompt_token_count": usage_metadata.prompt_token_count,
+        "cached_content_token_count": usage_metadata.cached_content_token_count,
+        "candidates_token_count": usage_metadata.candidates_token_count,
+        "tool_use_prompt_token_count": usage_metadata.tool_use_prompt_token_count,
+        "thoughts_token_count": usage_metadata.thoughts_token_count,
+        "total_token_count": usage_metadata.total_token_count,
+    }
 
 class GeminiService:
     def __init__(self):
@@ -106,13 +119,7 @@ class GeminiService:
                 
                 # 3. Usage Metadata (usually in the final chunk)
                 if chunk.usage_metadata:
-                    um = chunk.usage_metadata
-                    usage_metadata = {
-                        "prompt_token_count": um.prompt_token_count,
-                        "candidates_token_count": um.candidates_token_count,
-                        "total_token_count": um.total_token_count,
-                        "thoughts_token_count": getattr(um, 'thinking_token_count', None),
-                    }
+                    usage_metadata = serialize_usage_metadata(chunk.usage_metadata)
             
             # Emit the final "complete" event with ALL collected data
             yield json.dumps({

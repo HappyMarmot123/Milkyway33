@@ -10,8 +10,14 @@ export interface PromptConfigEntity {
 
 export interface TokenUsageEntity {
     id: string;
+    modelId?: string;
     inputTokens: number;
     outputTokens: number;
+    cachedTokens: number;
+    toolUsePromptTokens: number;
+    thoughtsTokens: number;
+    totalTokens: number;
+    requestCount: number;
     updatedAt: Date;
 }
 

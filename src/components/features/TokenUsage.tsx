@@ -5,6 +5,11 @@ import { Context, ContextTrigger, ContextContent, ContextContentHeader } from "@
 interface TokenUsageValue {
   inputTokens: number;
   outputTokens: number;
+  cachedTokens?: number;
+  toolUsePromptTokens?: number;
+  thoughtsTokens?: number;
+  totalTokens?: number;
+  requestCount?: number;
 }
 
 interface TokenUsageProps {
@@ -18,7 +23,7 @@ export function TokenUsage({ usage, maxTokens, modelId }: TokenUsageProps) {
     return null;
   }
 
-  const usedTokens = usage.inputTokens + usage.outputTokens;
+  const usedTokens = usage.totalTokens ?? usage.inputTokens + usage.outputTokens + (usage.thoughtsTokens || 0);
   const percentage = maxTokens ? (usedTokens / maxTokens) * 100 : 0;
 
   return (
@@ -49,6 +54,24 @@ export function TokenUsage({ usage, maxTokens, modelId }: TokenUsageProps) {
             <div className="text-muted-foreground">Output</div>
             <div className="font-mono">{usage.outputTokens?.toLocaleString() || 0}</div>
           </div>
+          {(usage.thoughtsTokens || 0) > 0 && (
+            <div>
+              <div className="text-muted-foreground">Thinking</div>
+              <div className="font-mono">{usage.thoughtsTokens?.toLocaleString() || 0}</div>
+            </div>
+          )}
+          {(usage.cachedTokens || 0) > 0 && (
+            <div>
+              <div className="text-muted-foreground">Cached</div>
+              <div className="font-mono">{usage.cachedTokens?.toLocaleString() || 0}</div>
+            </div>
+          )}
+          {(usage.requestCount || 0) > 0 && (
+            <div>
+              <div className="text-muted-foreground">Requests</div>
+              <div className="font-mono">{usage.requestCount?.toLocaleString() || 0}</div>
+            </div>
+          )}
         </div>
 
         {modelId && (

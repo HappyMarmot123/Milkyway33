@@ -5,6 +5,7 @@ import { TokenUsage } from "@/components/features/TokenUsage";
 import { chatRepository } from "@/services/chatRepository";
 import { Button } from "@/components/ui/button";
 import { RefreshCcw, Sparkles, Zap, Settings, ChevronRight, Cpu } from "lucide-react";
+import type { TokenUsageEntity } from "@/lib/db";
 
 // Model card with visual selection indicator
 const ModelOption = ({ 
@@ -76,11 +77,16 @@ export function SettingsPage() {
   });
 
   const [tokenUsage, setTokenUsage] = useState({ inputTokens: 0, outputTokens: 0 });
+  const [modelUsage, setModelUsage] = useState<TokenUsageEntity[]>([]);
   const [isResetting, setIsResetting] = useState(false);
 
   const loadTokenUsage = useCallback(async () => {
-    const usage = await chatRepository.getTotalTokenUsage();
+    const [usage, usageByModel] = await Promise.all([
+      chatRepository.getTotalTokenUsage(),
+      chatRepository.getTokenUsageByModel(),
+    ]);
     setTokenUsage(usage);
+    setModelUsage(usageByModel);
   }, []);
 
   useEffect(() => {
@@ -93,6 +99,7 @@ export function SettingsPage() {
     setIsResetting(true);
     await chatRepository.resetTokenUsage();
     setTokenUsage({ inputTokens: 0, outputTokens: 0 });
+    setModelUsage([]);
     setTimeout(() => setIsResetting(false), 500);
   };
 
@@ -156,6 +163,28 @@ export function SettingsPage() {
                   maxTokens={1000000}
                   modelId={model}
                 />
+                {modelUsage.length > 0 && (
+                  <div className="mt-4 overflow-hidden rounded-lg border border-white/10">
+                    <table className="w-full text-sm">
+                      <thead className="bg-white/5 text-muted-foreground">
+                        <tr>
+                          <th className="px-3 py-2 text-left font-medium">모델</th>
+                          <th className="px-3 py-2 text-right font-medium">요청</th>
+                          <th className="px-3 py-2 text-right font-medium">토큰</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {modelUsage.map((usage) => (
+                          <tr key={usage.id} className="border-t border-white/10">
+                            <td className="px-3 py-2 font-mono text-xs">{usage.modelId}</td>
+                            <td className="px-3 py-2 text-right font-mono">{usage.requestCount.toLocaleString()}</td>
+                            <td className="px-3 py-2 text-right font-mono">{usage.totalTokens.toLocaleString()}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </section>

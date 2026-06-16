@@ -40,9 +40,11 @@ export interface SafetyRating {
 
 export interface UsageMetadata {
   prompt_token_count?: number | null;
+  cached_content_token_count?: number | null;
   candidates_token_count?: number | null;
-  total_token_count?: number | null;
+  tool_use_prompt_token_count?: number | null;
   thoughts_token_count?: number | null;
+  total_token_count?: number | null;
 }
 
 // SSE Event Types

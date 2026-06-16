@@ -9,9 +9,11 @@ class ChatRequest(BaseModel):
 
 class UsageMetadata(BaseModel):
     prompt_token_count: Optional[int] = None
+    cached_content_token_count: Optional[int] = None
     candidates_token_count: Optional[int] = None
-    total_token_count: Optional[int] = None
+    tool_use_prompt_token_count: Optional[int] = None
     thoughts_token_count: Optional[int] = None
+    total_token_count: Optional[int] = None
 
 class ChatResponse(BaseModel):
     response: str

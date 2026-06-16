@@ -26,6 +26,11 @@ const MetadataPanel = ({
   const tokenUsage = metadata.usage_metadata ? {
     inputTokens: metadata.usage_metadata.prompt_token_count || 0,
     outputTokens: metadata.usage_metadata.candidates_token_count || 0,
+    cachedTokens: metadata.usage_metadata.cached_content_token_count || 0,
+    toolUsePromptTokens: metadata.usage_metadata.tool_use_prompt_token_count || 0,
+    thoughtsTokens: metadata.usage_metadata.thoughts_token_count || 0,
+    totalTokens: metadata.usage_metadata.total_token_count || 0,
+    requestCount: 1,
   } : null;
 
   return (
