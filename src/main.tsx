@@ -1,8 +1,14 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { scan } from 'react-scan'
 import './index.css'
 import App from './App.jsx'
 import { ThemeProvider } from './contexts/ThemeContext'
+
+scan({
+  enabled: import.meta.env.DEV,
+  showToolbar: true,
+})
 
 const root = document.getElementById('root');
 

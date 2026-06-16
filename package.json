@@ -50,6 +50,7 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.11.0",
+    "react-scan": "^0.5.7",
     "shadcn": "^3.7.0",
     "shiki": "^3.20.0",
     "streamdown": "^1.6.10",
