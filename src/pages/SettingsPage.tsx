@@ -1,7 +1,6 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ModelSettings } from "@/components/features/ModelSettings";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TokenUsage } from "@/components/features/TokenUsage";
 import { chatRepository } from "@/services/chatRepository";
 import { Button } from "@/components/ui/button";
@@ -9,13 +8,11 @@ import { RefreshCcw, Sparkles, Zap, Settings, ChevronRight, Cpu } from "lucide-r
 
 // Model card with visual selection indicator
 const ModelOption = ({ 
-  id, 
   name, 
   description, 
   isSelected, 
   onSelect 
 }: { 
-  id: string; 
   name: string; 
   description: string;
   isSelected: boolean;
@@ -61,27 +58,6 @@ const ModelOption = ({
   </button>
 );
 
-// Section header component
-const SectionHeader = ({ 
-  icon, 
-  title, 
-  description 
-}: { 
-  icon: React.ReactNode; 
-  title: string; 
-  description: string 
-}) => (
-  <div className="flex items-start gap-4 mb-6">
-    <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5">
-      {icon}
-    </div>
-    <div>
-      <h2 className="text-lg font-semibold text-foreground/90">{title}</h2>
-      <p className="text-sm text-muted-foreground">{description}</p>
-    </div>
-  </div>
-);
-
 const MODELS = [
   { id: "gemini-2.5-flash-lite", name: "Gemini 2.5 Flash Lite", description: "빠르고 효율적인 기본 모델" },
   { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash", description: "균형 잡힌 성능과 속도" },
@@ -102,14 +78,16 @@ export function SettingsPage() {
   const [tokenUsage, setTokenUsage] = useState({ inputTokens: 0, outputTokens: 0 });
   const [isResetting, setIsResetting] = useState(false);
 
-  useEffect(() => {
-    loadTokenUsage();
-  }, []);
-
-  const loadTokenUsage = async () => {
+  const loadTokenUsage = useCallback(async () => {
     const usage = await chatRepository.getTotalTokenUsage();
     setTokenUsage(usage);
-  };
+  }, []);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      void loadTokenUsage();
+    });
+  }, [loadTokenUsage]);
 
   const handleResetTokenUsage = async () => {
     setIsResetting(true);
@@ -203,7 +181,6 @@ export function SettingsPage() {
                   {MODELS.map((m) => (
                     <ModelOption
                       key={m.id}
-                      id={m.id}
                       name={m.name}
                       description={m.description}
                       isSelected={model === m.id}

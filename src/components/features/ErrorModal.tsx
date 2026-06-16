@@ -1,5 +1,4 @@
 
-import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -15,25 +14,12 @@ interface ErrorModalProps {
 }
 
 export function ErrorModal({ error, onClose, onRetry }: ErrorModalProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [errorCode, setErrorCode] = useState("ERROR");
-  const [userMessage, setUserMessage] = useState("");
-
-  useEffect(() => {
-    if (error) {
-      console.error("❌ Full Error Log:", error);
-      
-      const { code, message } = parseError(error);
-      setErrorCode(code);
-      setUserMessage(message);
-      setIsOpen(true);
-    } else {
-      setIsOpen(false);
-    }
-  }, [error]);
+  const isOpen = Boolean(error);
+  const { code: errorCode, message: userMessage } = error
+    ? parseError(error)
+    : { code: "ERROR", message: "" };
 
   const handleClose = () => {
-    setIsOpen(false);
     onClose();
   };
 
@@ -44,7 +30,7 @@ export function ErrorModal({ error, onClose, onRetry }: ErrorModalProps) {
 
   return (
     // Prevent closing via onOpenChange if it's not our manual close
-    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) return; setIsOpen(open); }}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleClose(); }}>
       {/* [&>button]:hidden removes the default X close button */}
       <DialogContent 
         className="sm:max-w-md bg-black/95 border-white/10 text-white p-0 overflow-hidden [&>button]:hidden shadow-2xl shadow-red-900/20"

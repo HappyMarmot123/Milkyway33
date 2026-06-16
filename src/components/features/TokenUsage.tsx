@@ -2,7 +2,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { Context, ContextTrigger, ContextContent, ContextContentHeader } from "@/components/ai-elements/context";
 
-export function TokenUsage({ usage, maxTokens, modelId }) {
+interface TokenUsageValue {
+  inputTokens: number;
+  outputTokens: number;
+}
+
+interface TokenUsageProps {
+  usage: TokenUsageValue | null;
+  maxTokens?: number;
+  modelId?: string;
+}
+
+export function TokenUsage({ usage, maxTokens, modelId }: TokenUsageProps) {
   if (!usage) {
     return null;
   }
@@ -52,4 +63,3 @@ export function TokenUsage({ usage, maxTokens, modelId }) {
     </Card>
   );
 }
-

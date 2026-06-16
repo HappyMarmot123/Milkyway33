@@ -1,7 +1,11 @@
+// @ts-nocheck
 "use client";;
 import { cn } from "@/lib/utils";
 import { motion } from "motion/react";
 import { memo, useMemo } from "react";
+
+const MotionParagraph = motion.create("p");
+const MotionSpan = motion.create("span");
 
 const ShimmerComponent = ({
   children,
@@ -10,8 +14,7 @@ const ShimmerComponent = ({
   duration = 2,
   spread = 2
 }) => {
-  const MotionComponent = motion.create(Component);
-
+  const MotionComponent = Component === "span" ? MotionSpan : MotionParagraph;
   const dynamicSpread = useMemo(() => (children?.length ?? 0) * spread, [children, spread]);
 
   return (

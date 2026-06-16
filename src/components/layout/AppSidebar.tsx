@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { ChangeEvent, KeyboardEvent } from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -148,8 +149,8 @@ export function AppSidebar() {
                         <div className="flex items-center gap-2 px-2 py-1">
                           <Input
                             value={editingTitle}
-                            onChange={(e) => setEditingTitle(e.target.value)}
-                            onKeyDown={(e) => {
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => setEditingTitle(e.target.value)}
+                            onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
                               if (e.key === "Enter") handleRenameSubmit();
                               if (e.key === "Escape") handleRenameCancel();
                             }}

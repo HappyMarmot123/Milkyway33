@@ -1,15 +1,22 @@
 import * as React from "react";
 
-const ThemeContext = React.createContext(undefined);
+type Theme = "light" | "dark";
+
+interface ThemeContextValue {
+  theme: Theme;
+  setTheme: (newTheme: Theme) => void;
+}
+
+const ThemeContext = React.createContext<ThemeContextValue | undefined>(undefined);
 
 const THEME_KEY = "theme-preference";
 
-export function ThemeProvider({ children }) {
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // 초기 테마 로드
-  const [theme, setThemeState] = React.useState(() => {
+  const [theme, setThemeState] = React.useState<Theme>(() => {
     try {
       const saved = localStorage.getItem(THEME_KEY);
-      if (["light", "dark"].includes(saved)) {
+      if (saved === "light" || saved === "dark") {
         return saved;
       }
     } catch (e) {
@@ -20,7 +27,7 @@ export function ThemeProvider({ children }) {
   });
 
   // 테마 설정 함수
-  const setTheme = React.useCallback((newTheme) => {
+  const setTheme = React.useCallback((newTheme: Theme) => {
     setThemeState(newTheme);
     try {
       localStorage.setItem(THEME_KEY, newTheme);

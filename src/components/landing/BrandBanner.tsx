@@ -15,4 +15,3 @@ export function BrandBanner() {
     </section>
   );
 }
-8

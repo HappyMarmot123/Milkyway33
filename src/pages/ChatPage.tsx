@@ -21,6 +21,7 @@ const MetadataPanel = ({
   onToggle: () => void;
 }) => {
   if (!metadata) return null;
+  const modelUsed = metadata.model_used ?? "Unknown";
 
   const tokenUsage = metadata.usage_metadata ? {
     inputTokens: metadata.usage_metadata.prompt_token_count || 0,
@@ -41,7 +42,7 @@ const MetadataPanel = ({
                 {/* Model badge */}
                 <div className="flex items-center gap-1.5">
                   <Sparkles className="h-3 w-3 text-orange-400" />
-                  <span className="font-medium">{metadata.model_used}</span>
+                  <span className="font-medium">{modelUsed}</span>
                 </div>
                 
                 {/* Token count */}
@@ -77,7 +78,7 @@ const MetadataPanel = ({
                 <StatCard 
                   icon={<Sparkles className="h-4 w-4 text-orange-400" />}
                   label="모델"
-                  value={metadata.model_used}
+                  value={modelUsed}
                 />
                 <StatCard 
                   icon={<Zap className="h-4 w-4 text-amber-400" />}

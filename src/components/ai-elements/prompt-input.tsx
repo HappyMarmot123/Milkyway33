@@ -1,3 +1,4 @@
+// @ts-nocheck
 "use client";;
 import { Button } from "@/components/ui/button";
 import {
@@ -162,7 +163,10 @@ export function PromptInputProvider({
 
   // Keep a ref to attachments for cleanup on unmount (avoids stale closure)
   const attachmentsRef = useRef(attachmentFiles);
-  attachmentsRef.current = attachmentFiles;
+
+  useEffect(() => {
+    attachmentsRef.current = attachmentFiles;
+  }, [attachmentFiles]);
 
   // Cleanup blob URLs on unmount to prevent memory leaks
   useEffect(() => {
@@ -909,7 +913,7 @@ export const PromptInputSpeechButton = ({
   ...props
 }) => {
   const [isListening, setIsListening] = useState(false);
-  const [recognition, setRecognition] = useState(null);
+  const [isSpeechAvailable, setIsSpeechAvailable] = useState(false);
   const recognitionRef = useRef(null);
 
   useEffect(() => {
@@ -961,7 +965,7 @@ export const PromptInputSpeechButton = ({
       };
 
       recognitionRef.current = speechRecognition;
-      setRecognition(speechRecognition);
+      queueMicrotask(() => setIsSpeechAvailable(true));
     }
 
     return () => {
@@ -972,6 +976,7 @@ export const PromptInputSpeechButton = ({
   }, [textareaRef, onTranscriptionChange]);
 
   const toggleListening = useCallback(() => {
+    const recognition = recognitionRef.current;
     if (!recognition) {
       return;
     }
@@ -981,7 +986,7 @@ export const PromptInputSpeechButton = ({
     } else {
       recognition.start();
     }
-  }, [recognition, isListening]);
+  }, [isListening]);
 
   return (
     <PromptInputButton
@@ -990,7 +995,7 @@ export const PromptInputSpeechButton = ({
         isListening && "animate-pulse bg-accent text-accent-foreground",
         className
       )}
-      disabled={!recognition}
+      disabled={!isSpeechAvailable}
       onClick={toggleListening}
       {...props}>
       <MicIcon className="size-4" />

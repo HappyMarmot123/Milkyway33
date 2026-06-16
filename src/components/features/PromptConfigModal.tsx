@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { X, Save } from "lucide-react";
 import { ChatPromptConfig, ChatMessageExample } from "@/features/chat/types";
 
@@ -15,87 +15,91 @@ export const PromptConfigModal = ({
   config,
   onSave,
 }: PromptConfigModalProps) => {
-  const [systemInstruction, setSystemInstruction] = useState("");
+  if (!isOpen) return null;
+
+  return (
+    <PromptConfigForm
+      key={JSON.stringify(config)}
+      config={config}
+      onClose={onClose}
+      onSave={onSave}
+    />
+  );
+};
+
+const DENY_PATTERNS = [
+  /ignore previous instructions/i,
+  /system prompt/i,
+  /ignore the above/i,
+  /DAN mode/i,
+  /jailbreak/i,
+  /never refuse/i,
+  /do not apologize/i,
+  /do not say no/i,
+  /developer mode/i,
+  /unrestricted/i,
+  /god mode/i,
+  /sudo/i,
+  /decode/i,
+  /base64/i,
+  /hex string/i,
+  /\|\|/,
+  /&&/,
+  /\$\(/,
+];
+
+type PromptErrors = {
+  system?: string;
+  example?: { input?: string; output?: string };
+};
+
+function checkInjection(text: string): string | null {
+  if (text.length > 300) return "Message exceeds 300 characters.";
+  for (const pattern of DENY_PATTERNS) {
+    if (pattern.test(text)) {
+      return "Potential prompt injection detected (forbidden keyword or pattern).";
+    }
+  }
+  return null;
+}
+
+function getPromptErrors(sys: string, ex: ChatMessageExample): PromptErrors {
+  const newErrors: PromptErrors = {};
+
+  const sysError = checkInjection(sys);
+  if (sysError) {
+    newErrors.system = sysError;
+  }
+
+  const inputError = checkInjection(ex.input);
+  const outputError = checkInjection(ex.output);
+
+  if (inputError || outputError) {
+    newErrors.example = {};
+    if (inputError) newErrors.example.input = inputError;
+    if (outputError) newErrors.example.output = outputError;
+  }
+
+  return newErrors;
+}
+
+function PromptConfigForm({
+  config,
+  onClose,
+  onSave,
+}: Pick<PromptConfigModalProps, "config" | "onClose" | "onSave">) {
+  const [systemInstruction, setSystemInstruction] = useState(config.systemInstruction || "");
   // Always maintain at least one example structure for the UI
-  const [example, setExample] = useState<ChatMessageExample>({ input: "", output: "" });
-  const [errors, setErrors] = useState<{ system?: string; example?: { input?: string; output?: string } }>({});
-
-  useEffect(() => {
-    if (isOpen) {
-      setSystemInstruction(config.systemInstruction || "");
-      // If valid examples exist, use the first one, otherwise default empty
-      if (config.examples && config.examples.length > 0) {
-        setExample(config.examples[0]);
-      } else {
-        setExample({ input: "", output: "" });
-      }
-      setErrors({});
-    }
-  }, [isOpen, config]);
-
-  const DENY_PATTERNS = [
-    /ignore previous instructions/i,
-    /system prompt/i,
-    /ignore the above/i,
-    /DAN mode/i,
-    /jailbreak/i,
-    /never refuse/i,
-    /do not apologize/i,
-    /do not say no/i,
-    /developer mode/i,
-    /unrestricted/i,
-    /god mode/i,
-    /sudo/i,
-    /decode/i,
-    /base64/i,
-    /hex string/i,
-    /\|\|/,
-    /&&/,
-    /\$\(/,
-  ];
-
-  const checkInjection = (text: string): string | null => {
-    if (text.length > 300) return "Message exceeds 300 characters.";
-    for (const pattern of DENY_PATTERNS) {
-      if (pattern.test(text)) {
-        return "Potential prompt injection detected (forbidden keyword or pattern).";
-      }
-    }
-    return null;
-  };
-
-  const validate = (sys: string, ex: ChatMessageExample) => {
-    const newErrors: typeof errors = {};
-    let hasError = false;
-
-    const sysError = checkInjection(sys);
-    if (sysError) {
-      newErrors.system = sysError;
-      hasError = true;
-    }
-
-    const inputError = checkInjection(ex.input);
-    const outputError = checkInjection(ex.output);
-
-    if (inputError || outputError) {
-      newErrors.example = {};
-      if (inputError) newErrors.example.input = inputError;
-      if (outputError) newErrors.example.output = outputError;
-      hasError = true;
-    }
-
-    setErrors(newErrors);
-    return !hasError;
-  };
-
-  useEffect(() => {
-    if (isOpen) {
-      validate(systemInstruction, example);
-    }
-  }, [systemInstruction, example, isOpen]);
+  const [example, setExample] = useState<ChatMessageExample>(
+    config.examples?.[0] ?? { input: "", output: "" }
+  );
+  const errors = useMemo(
+    () => getPromptErrors(systemInstruction, example),
+    [systemInstruction, example]
+  );
 
   const handleSave = () => {
-    if (validate(systemInstruction, example)) {
+    if (Object.keys(errors).length === 0) {
       const examples = [];
       // Only save if meaningful content exists
       if (example.input.trim() || example.output.trim()) {
@@ -115,8 +119,6 @@ export const PromptConfigModal = ({
   };
 
   const hasErrors = Object.keys(errors).length > 0;
-
-  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
@@ -260,4 +262,4 @@ export const PromptConfigModal = ({
       </div>
     </div>
   );
-};
+}

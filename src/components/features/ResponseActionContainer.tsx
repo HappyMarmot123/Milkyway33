@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import type { ComponentType } from "react";
 import { 
   ThumbsUp, 
   ThumbsDown, 
@@ -11,7 +12,6 @@ import {
   FileText,
   Mail
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
@@ -30,6 +30,44 @@ interface ResponseActionContainerProps {
   onRegenerate?: () => void;
   onFeedback?: (type: 'up' | 'down') => void;
   className?: string;
+}
+
+function ActionButton({ 
+  icon: Icon, 
+  label, 
+  onClick, 
+  isActive = false 
+}: { 
+  icon: ComponentType<{ className?: string; strokeWidth?: number }>; 
+  label: string; 
+  onClick: () => void; 
+  isActive?: boolean;
+}) {
+  return (
+    <TooltipProvider delayDuration={0}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            className={`p-1 !bg-transparent ${
+              isActive 
+                ? "text-blue-400" 
+                : "text-zinc-500 hover:text-zinc-200"
+            }`}
+            onClick={onClick}
+          >
+            <Icon className="h-4 w-4" strokeWidth={1.5} />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent 
+          side="bottom" 
+          className="text-[10px] px-2 py-1 bg-zinc-800 text-zinc-200 border-zinc-700/50"
+          sideOffset={5}
+        >
+          <p>{label}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
 }
 
 export function ResponseActionContainer({ 
@@ -56,42 +94,6 @@ export function ResponseActionContainer({
     setFeedback(newFeedback);
     if (onFeedback && newFeedback) onFeedback(newFeedback);
   };
-
-  const ActionButton = ({ 
-    icon: Icon, 
-    label, 
-    onClick, 
-    isActive = false 
-  }: { 
-    icon: any, 
-    label: string, 
-    onClick: () => void, 
-    isActive?: boolean 
-  }) => (
-    <TooltipProvider delayDuration={0}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            className={`p-1 !bg-transparent ${
-              isActive 
-                ? "text-blue-400" 
-                : "text-zinc-500 hover:text-zinc-200"
-            }`}
-            onClick={onClick}
-          >
-            <Icon className="h-4 w-4" strokeWidth={1.5} />
-          </button>
-        </TooltipTrigger>
-        <TooltipContent 
-          side="bottom" 
-          className="text-[10px] px-2 py-1 bg-zinc-800 text-zinc-200 border-zinc-700/50"
-          sideOffset={5}
-        >
-          <p>{label}</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
 
   return (
     <div className={`flex items-center gap-3 mt-3 ml-1 ${className}`}>
