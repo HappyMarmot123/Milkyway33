@@ -1,5 +1,6 @@
 import { useLocation } from "react-router-dom";
 import { useChatContext } from "@/contexts/ChatContext";
+import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { Sparkles, Settings, MessageCircle } from "lucide-react";
 
 const PAGE_CONFIG: Record<string, { title: string; icon: React.ReactNode }> = {
@@ -59,7 +60,9 @@ const StatusIndicator = ({ status }: { status: string }) => {
 export function Header() {
   const location = useLocation();
   const { status } = useChatContext();
+  const { isMobile, open, openMobile } = useSidebar();
   const pageConfig = PAGE_CONFIG[location.pathname] || { title: "LLM Chat", icon: <Sparkles className="h-5 w-5" /> };
+  const isSidebarOpen = isMobile ? openMobile : open;
 
   return (
     <header className="sticky top-0 z-50 flex h-14 shrink-0 items-center justify-between gap-4 px-4 sm:px-6 bg-gradient-to-r from-bg-100/80 via-bg-100/60 to-bg-100/80 backdrop-blur-xl border-b border-white/5">
@@ -68,6 +71,9 @@ export function Header() {
       
       {/* Left: Page title with icon */}
       <div className="flex items-center gap-3">
+        {!isSidebarOpen && (
+          <SidebarTrigger className="h-8 w-8 rounded-lg border border-white/10 bg-white/5 text-foreground/80 shadow-sm transition-all duration-200 hover:bg-white/10 hover:text-foreground" />
+        )}
         <h1 className="font-semibold text-foreground/90 leading-tight">
           {pageConfig.title}
         </h1>

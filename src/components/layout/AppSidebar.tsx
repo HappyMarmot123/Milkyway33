@@ -24,7 +24,6 @@ import {
   MoreHorizontal,
   Pencil,
   Trash2,
-  Sparkles,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useChatContext } from "@/contexts/ChatContext";
@@ -263,4 +262,3 @@ export function AppSidebar() {
     </section>
   );
 }
-
