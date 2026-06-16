@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { RefreshCcwIcon, Settings2, Sparkles, Send } from "lucide-react";
+import { RefreshCcwIcon, Settings2, Sparkles } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
 import {
   Conversation,
@@ -71,20 +71,20 @@ const ChatBot = ({ onMetadataUpdate }: ChatBotProps) => {
     setInput("");
   };
 
-  // Map our status to the expected format
+  // Map our status to PromptInputSubmit's expected format
   const getSubmitStatus = () => {
     switch (status) {
       case 'thinking': return 'submitted';
-      case 'generating': return 'streaming';
+      case 'generating':
       case 'streaming': return 'streaming';
-      default: return 'ready';
+      default: return undefined;
     }
   };
 
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="flex flex-col h-full w-full">
+    <article aria-label="chat-container" className="flex flex-col h-full w-full">
       <div className="relative flex-1 flex flex-col max-w-4xl mx-auto w-full px-4 sm:px-6">
         <Conversation className="flex-1 min-h-0 overflow-hidden">
           <ConversationContent className="h-full align-middle pb-56">
@@ -126,7 +126,7 @@ const ChatBot = ({ onMetadataUpdate }: ChatBotProps) => {
                   </Reasoning>
                 )}
                 
-                <Message from={message.role} className="">
+                <Message from={message.role}>
                   <MessageContent>
                     <MessageResponse>{message.content}</MessageResponse>
                   </MessageContent>
@@ -146,15 +146,15 @@ const ChatBot = ({ onMetadataUpdate }: ChatBotProps) => {
 
             {/* Show status-specific loader */}
             {status === 'thinking' && (
-              <Loader variant="thinking" className="" />
+              <Loader variant="thinking" />
             )}
-            
+
             {status === 'generating' && (
-              <Loader variant="generating" className="" />
+              <Loader variant="generating" />
             )}
-            
+
             {status === 'streaming' && currentResponse && (
-              <Message from="assistant" className="">
+              <Message from="assistant">
                 <MessageContent>
                   <MessageResponse>{currentResponse}</MessageResponse>
                 </MessageContent>
@@ -273,7 +273,7 @@ const ChatBot = ({ onMetadataUpdate }: ChatBotProps) => {
                     className={`
                       rounded-xl h-9 w-9 transition-all duration-300
                       ${input.trim() 
-                        ? "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white shadow-lg shadow-purple-500/25" 
+                        ? "text-white" 
                         : "bg-white/10 text-muted-foreground/50"
                       }
                     `}
@@ -306,7 +306,7 @@ const ChatBot = ({ onMetadataUpdate }: ChatBotProps) => {
         config={promptConfig}
         onSave={(newConfig) => setPromptConfig(newConfig)}
       />
-    </div>
+    </article>
   );
 };
 

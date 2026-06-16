@@ -2,13 +2,13 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ArrowDownIcon } from "lucide-react";
-import { useCallback } from "react";
+import { type ComponentProps, useCallback } from "react";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 
 export const Conversation = ({
   className,
   ...props
-}) => (
+}: ComponentProps<typeof StickToBottom>) => (
   <StickToBottom
     className={cn("relative flex-1 overflow-y-hidden", className)}
     initial="smooth"
@@ -20,7 +20,7 @@ export const Conversation = ({
 export const ConversationContent = ({
   className,
   ...props
-}) => (
+}: ComponentProps<typeof StickToBottom.Content>) => (
   <StickToBottom.Content className={cn("flex flex-col gap-8 p-4", className)} {...props} />
 );
 
@@ -55,7 +55,7 @@ export const ConversationEmptyState = ({
 export const ConversationScrollButton = ({
   className,
   ...props
-}) => {
+}: ComponentProps<typeof Button>) => {
   const { isAtBottom, scrollToBottom } = useStickToBottomContext();
 
   const handleScrollToBottom = useCallback(() => {

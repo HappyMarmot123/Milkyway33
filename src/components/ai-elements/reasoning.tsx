@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { BrainIcon, ChevronDownIcon } from "lucide-react";
-import { createContext, memo, useContext, useEffect, useState } from "react";
+import { type ComponentProps, type ReactNode, createContext, memo, useContext, useEffect, useState } from "react";
 import { Streamdown } from "streamdown";
 import { Shimmer } from "./shimmer";
 
@@ -33,6 +33,9 @@ export const Reasoning = memo(({
   duration: durationProp,
   children,
   ...props
+}: ComponentProps<typeof Collapsible> & {
+  isStreaming?: boolean;
+  duration?: number;
 }) => {
   const [isOpen, setIsOpen] = useControllableState({
     prop: open,
@@ -104,6 +107,8 @@ export const ReasoningTrigger = memo(({
   children,
   getThinkingMessage = defaultGetThinkingMessage,
   ...props
+}: ComponentProps<typeof CollapsibleTrigger> & {
+  getThinkingMessage?: (isStreaming: boolean, duration?: number) => ReactNode;
 }) => {
   const { isStreaming, isOpen, duration } = useReasoning();
 
@@ -130,7 +135,7 @@ export const ReasoningContent = memo(({
   className,
   children,
   ...props
-}) => (
+}: ComponentProps<typeof CollapsibleContent>) => (
   <CollapsibleContent
     className={cn(
       "mt-4 text-sm",

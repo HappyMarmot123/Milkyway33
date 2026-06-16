@@ -47,6 +47,9 @@ import {
 import { nanoid } from "nanoid";
 import {
   Children,
+  type ComponentProps,
+  type FormEvent,
+  type ReactNode,
   createContext,
   Fragment,
   useCallback,
@@ -56,6 +59,22 @@ import {
   useRef,
   useState,
 } from "react";
+
+type PromptInputMessage = { text: string; files: unknown[] };
+
+type PromptInputProps = Omit<ComponentProps<"form">, "onSubmit"> & {
+  accept?: string;
+  multiple?: boolean;
+  globalDrop?: boolean;
+  syncHiddenInput?: boolean;
+  maxFiles?: number;
+  maxFileSize?: number;
+  onError?: (err: { code: string; message: string }) => void;
+  onSubmit: (
+    message: PromptInputMessage,
+    event: FormEvent<HTMLFormElement>
+  ) => void | Promise<void>;
+};
 
 const PromptInputController = createContext(null);
 const ProviderAttachmentsContext = createContext(null);
@@ -341,7 +360,7 @@ export const PromptInputActionAddAttachments = ({
   );
 };
 
-export const PromptInput = ({
+const PromptInputImpl = ({
   className,
   accept,
   multiple,
@@ -665,14 +684,18 @@ export const PromptInput = ({
   );
 };
 
+export const PromptInput = PromptInputImpl as (
+  props: PromptInputProps
+) => ReactNode;
+
 export const PromptInputBody = ({
   className,
   ...props
-}) => (
+}: ComponentProps<"div">) => (
   <div className={cn("contents", className)} {...props} />
 );
 
-export const PromptInputTextarea = ({
+const PromptInputTextareaImpl = ({
   onChange,
   className,
   placeholder = "What would you like to know?",
@@ -766,6 +789,10 @@ export const PromptInputTextarea = ({
   );
 };
 
+export const PromptInputTextarea = PromptInputTextareaImpl as (
+  props: ComponentProps<"textarea">
+) => ReactNode;
+
 export const PromptInputHeader = ({
   className,
   ...props
@@ -779,7 +806,7 @@ export const PromptInputHeader = ({
 export const PromptInputFooter = ({
   className,
   ...props
-}) => (
+}: ComponentProps<"div">) => (
   <InputGroupAddon
     align="block-end"
     className={cn("justify-between gap-1", className)}
@@ -789,7 +816,7 @@ export const PromptInputFooter = ({
 export const PromptInputTools = ({
   className,
   ...props
-}) => (
+}: ComponentProps<"div">) => (
   <div className={cn("flex items-center gap-1", className)} {...props} />
 );
 
@@ -798,7 +825,7 @@ export const PromptInputButton = ({
   className,
   size,
   ...props
-}) => {
+}: ComponentProps<typeof Button> & { label?: string; tooltip?: string }) => {
   const newSize =
     size ?? (Children.count(props.children) > 1 ? "sm" : "icon-sm");
 
@@ -849,6 +876,8 @@ export const PromptInputSubmit = ({
   status,
   children,
   ...props
+}: ComponentProps<typeof Button> & {
+  status?: "submitted" | "streaming" | "error";
 }) => {
   let Icon = <CornerDownLeftIcon className="size-4" />;
 

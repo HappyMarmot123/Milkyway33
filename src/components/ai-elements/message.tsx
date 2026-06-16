@@ -17,14 +17,14 @@ import {
   PaperclipIcon,
   XIcon,
 } from "lucide-react";
-import { createContext, memo, useContext, useEffect, useState } from "react";
+import { type ComponentProps, createContext, memo, useContext, useEffect, useState } from "react";
 import { Streamdown } from "streamdown";
 
 export const Message = ({
   className,
   from,
   ...props
-}) => (
+}: ComponentProps<"div"> & { from?: string }) => (
   <div
     className={cn(
       "group flex w-full max-w-[95%] flex-col gap-2",
@@ -38,7 +38,7 @@ export const MessageContent = ({
   children,
   className,
   ...props
-}) => (
+}: ComponentProps<"div">) => (
   <div
     className={cn(
       "is-user:dark flex w-fit max-w-full min-w-0 flex-col gap-2 overflow-hidden text-sm",
@@ -252,7 +252,7 @@ export const MessageBranchPage = ({
 export const MessageResponse = memo(({
   className,
   ...props
-}) => (
+}: ComponentProps<typeof Streamdown>) => (
   <Streamdown
     className={cn("size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0", className)}
     {...props} />

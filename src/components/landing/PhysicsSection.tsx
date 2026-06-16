@@ -42,7 +42,7 @@ export function PhysicsSection() {
             <span>Milky Way that is</span>
             <div className="bg-primary/10 border border-primary/20 px-3 sm:px-4 py-1 sm:py-2 rounded-xl text-primary inline-flex items-center justify-center">
               <RotatingText
-                texts={['GPT-4', 'Claude-3', 'Gemini', 'Llama', 'Mistral', 'RAG', 'Agents', 'Multimodal']}
+                texts={['Limitless', 'Brilliant', 'Cosmic', 'Stellar', 'Infinite', 'Luminous', 'Yours']}
                 mainClassName="overflow-hidden justify-center rounded-lg text-primary"
                 staggerFrom="last"
                 initial={{ y: "100%" }}
@@ -60,8 +60,8 @@ export function PhysicsSection() {
         {/* Falling Text Canvas */}
         <div className="w-[80%] h-[300px] mx-auto rounded-3xl border border-white/10 bg-black/40 backdrop-blur-sm relative overflow-hidden">
           <FallingText
-            text={`GPT-4 Claude-3 Gemini Llama Mistral Stable-Diffusion Midjourney DALL-E Whisper TTS Embeddings Vectors RAG Agents Tools Knowledge Function-Calling JSON Code Analysis Vision Multimodal`}
-            highlightWords={["GPT-4", "Claude-3", "Gemini", "Agents", "Multimodal"]}
+            text={`Limitless Brilliant Cosmic Stellar Infinite Luminous Yours`}
+            highlightWords={["Yours"]}
             highlightClass="text-primary font-bold"
             trigger="scroll"
             backgroundColor="transparent"
