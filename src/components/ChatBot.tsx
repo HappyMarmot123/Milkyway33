@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { RefreshCcwIcon, Settings2, Sparkles } from "lucide-react";
+import { memo, useCallback, useState, useEffect } from "react";
+import { RefreshCcwIcon, Settings2, Sparkles, TimerReset } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
 import {
   Conversation,
@@ -30,11 +30,128 @@ import { ErrorModal } from "@/components/features/ErrorModal";
 import { ResponseActionContainer } from "@/components/features/ResponseActionContainer";
 import { PromptConfigModal } from "@/components/features/PromptConfigModal";
 import { useChatContext } from "@/contexts/ChatContext";
-import type { ChatMetadata } from "@/features/chat/types";
+import {
+  getChatCooldownSnapshot,
+  useChatCooldown,
+} from "@/features/chat/cooldownStore";
+import type { ChatMetadata, ChatState } from "@/features/chat/types";
 
 interface ChatBotProps {
   onMetadataUpdate?: (metadata: ChatMetadata) => void;
 }
+
+type ChatStatus = ChatState["status"];
+type SubmitStatus = "submitted" | "streaming" | undefined;
+
+interface CooldownTextareaProps {
+  input: string;
+  status: ChatStatus;
+  onInputChange: (value: string) => void;
+  onFocusChange: (isFocused: boolean) => void;
+  onSubmit: (message: { text?: string }) => void;
+}
+
+const CooldownTextarea = memo(({
+  input,
+  status,
+  onInputChange,
+  onFocusChange,
+  onSubmit,
+}: CooldownTextareaProps) => {
+  const cooldown = useChatCooldown();
+  const cooldownLabel = `${cooldown.remainingSeconds}초`;
+
+  return (
+    <PromptInputTextarea
+      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => onInputChange(e.target.value)}
+      value={input}
+      placeholder={cooldown.isActive ? `${cooldownLabel} 후 다시 요청할 수 있습니다` : "메시지를 입력하세요..."}
+      disabled={cooldown.isActive || status !== 'idle'}
+      onFocus={() => onFocusChange(true)}
+      onBlur={() => onFocusChange(false)}
+      onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          onSubmit({ text: input });
+        }
+      }}
+    />
+  );
+});
+
+CooldownTextarea.displayName = "CooldownTextarea";
+
+interface CooldownSubmitAreaProps {
+  input: string;
+  status: ChatStatus;
+  submitStatus: SubmitStatus;
+  onSetError: (error: string) => void;
+}
+
+const CooldownSubmitArea = memo(({ input, status, submitStatus, onSetError }: CooldownSubmitAreaProps) => {
+  const cooldown = useChatCooldown();
+  const cooldownLabel = `${cooldown.remainingSeconds}초`;
+  const canSubmit = input.trim() && !cooldown.isActive && status === 'idle';
+
+  return (
+    <div className="flex items-center gap-2">
+      {cooldown.isActive && (
+        <div className="flex items-center gap-1.5 rounded-lg border border-orange-500/20 bg-orange-500/10 px-2.5 py-1 text-[11px] font-medium text-orange-200">
+          <TimerReset size={12} className="text-orange-300" />
+          <span>{cooldownLabel}</span>
+        </div>
+      )}
+
+      {/* DEV: Error Simulation (hidden in production) */}
+      <div className="hidden sm:flex gap-1.5 opacity-60 hover:opacity-100 transition-opacity">
+        <button
+          type="button"
+          onClick={() => onSetError("429 RESOURCE_EXHAUSTED: Quota exceeded test")}
+          className="text-[9px] bg-red-500/20 text-red-400/80 border border-red-500/30 px-1.5 py-0.5 rounded hover:bg-red-500/30 transition-colors"
+          title="Simulate 429 Error"
+        >
+          429
+        </button>
+        <button
+          type="button"
+          onClick={() => onSetError("500 INTERNAL_SERVER_ERROR test")}
+          className="text-[9px] bg-orange-500/20 text-orange-400/80 border border-orange-500/30 px-1.5 py-0.5 rounded hover:bg-orange-500/30 transition-colors"
+          title="Simulate 500 Error"
+        >
+          500
+        </button>
+      </div>
+
+      <PromptInputSubmit
+        disabled={!canSubmit}
+        status={submitStatus}
+        className={`
+          rounded-xl h-9 w-9 transition-all duration-300
+          ${canSubmit
+            ? "text-white"
+            : "bg-white/10 text-muted-foreground/50"
+          }
+        `}
+      />
+    </div>
+  );
+});
+
+CooldownSubmitArea.displayName = "CooldownSubmitArea";
+
+const CooldownDisclaimer = memo(() => {
+  const cooldown = useChatCooldown();
+
+  return (
+    <p className="text-[10px] sm:text-[11px] text-muted-foreground text-center mt-3">
+      {cooldown.isActive
+        ? `무료 플랜 보호를 위해 요청 간 ${cooldown.remainingSeconds}초 대기 중`
+        : "Milkyway-33 / Made by @HappyMarmot123"}
+    </p>
+  );
+});
+
+CooldownDisclaimer.displayName = "CooldownDisclaimer";
 
 const ChatBot = ({ onMetadataUpdate }: ChatBotProps) => {
   const [input, setInput] = useState("");
@@ -63,13 +180,22 @@ const ChatBot = ({ onMetadataUpdate }: ChatBotProps) => {
     }
   }, [currentMetadata, onMetadataUpdate]);
 
-  const handleSubmit = (message: { text?: string }) => {
+  const handleSubmit = useCallback((message: { text?: string }) => {
     const text = message.text || input;
-    if (!text.trim()) return;
+    const cooldown = getChatCooldownSnapshot();
+    if (!text.trim() || status !== 'idle' || cooldown.isActive) return;
     
     sendMessage(text);
     setInput("");
-  };
+  }, [input, sendMessage, status]);
+
+  const handleInputChange = useCallback((value: string) => {
+    setInput(value);
+  }, []);
+
+  const handleFocusChange = useCallback((nextIsFocused: boolean) => {
+    setIsFocused(nextIsFocused);
+  }, []);
 
   // Map our status to PromptInputSubmit's expected format
   const getSubmitStatus = () => {
@@ -82,6 +208,7 @@ const ChatBot = ({ onMetadataUpdate }: ChatBotProps) => {
   };
 
   const hasMessages = messages.length > 0;
+  const submitStatus = getSubmitStatus();
 
   return (
     <article aria-label="chat-container" className="flex flex-col h-full w-full">
@@ -192,18 +319,12 @@ const ChatBot = ({ onMetadataUpdate }: ChatBotProps) => {
               className="bg-transparent rounded-[28px]"
             >
               <PromptInputBody>
-                <PromptInputTextarea
-                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setInput(e.target.value)}
-                  value={input}
-                  placeholder="메시지를 입력하세요..."
-                  onFocus={() => setIsFocused(true)}
-                  onBlur={() => setIsFocused(false)}
-                  onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSubmit({ text: input });
-                    }
-                  }}
+                <CooldownTextarea
+                  input={input}
+                  status={status}
+                  onInputChange={handleInputChange}
+                  onFocusChange={handleFocusChange}
+                  onSubmit={handleSubmit}
                 />
               </PromptInputBody>
               
@@ -247,47 +368,18 @@ const ChatBot = ({ onMetadataUpdate }: ChatBotProps) => {
                   </div>
                 </PromptInputTools>
                 
-                {/* Submit button - Gemini style */}
-                <div className="flex items-center gap-2">
-                  {/* DEV: Error Simulation (hidden in production) */}
-                  <div className="hidden sm:flex gap-1.5 opacity-60 hover:opacity-100 transition-opacity">
-                    <button 
-                      onClick={() => setError("429 RESOURCE_EXHAUSTED: Quota exceeded test")}
-                      className="text-[9px] bg-red-500/20 text-red-400/80 border border-red-500/30 px-1.5 py-0.5 rounded hover:bg-red-500/30 transition-colors"
-                      title="Simulate 429 Error"
-                    >
-                      429
-                    </button>
-                    <button 
-                      onClick={() => setError("500 INTERNAL_SERVER_ERROR test")}
-                      className="text-[9px] bg-orange-500/20 text-orange-400/80 border border-orange-500/30 px-1.5 py-0.5 rounded hover:bg-orange-500/30 transition-colors"
-                      title="Simulate 500 Error"
-                    >
-                      500
-                    </button>
-                  </div>
-                  
-                  <PromptInputSubmit 
-                    disabled={!input.trim() && status === 'idle'} 
-                    status={getSubmitStatus()}
-                    className={`
-                      rounded-xl h-9 w-9 transition-all duration-300
-                      ${input.trim() 
-                        ? "text-white" 
-                        : "bg-white/10 text-muted-foreground/50"
-                      }
-                    `}
-                  />
-                </div>
+                <CooldownSubmitArea
+                  input={input}
+                  status={status}
+                  submitStatus={submitStatus}
+                  onSetError={setError}
+                />
               </PromptInputFooter>
             </PromptInput>
             </div>
           </div>
           
-          {/* Disclaimer text - Gemini style */}
-          <p className="text-[10px] sm:text-[11px] text-muted-foreground text-center mt-3">
-            Milkyway-33 / Made by @HappyMarmot123
-          </p>
+          <CooldownDisclaimer />
         </div>
       </div>
     </div>

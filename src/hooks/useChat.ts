@@ -1,11 +1,16 @@
 import { useState, useCallback } from 'react';
-import { streamChat } from '@/api/chat';
+import { ChatRateLimitError, streamChat } from '@/api/chat';
 import type { 
   ChatMessage, 
   ChatMetadata, 
   ChatState,
   ChatPromptConfig
 } from '@/features/chat/types';
+import {
+  CHAT_COOLDOWN_SECONDS,
+  getChatCooldownSnapshot,
+  startChatCooldown,
+} from '@/features/chat/cooldownStore';
 import { chatRepository } from '@/services/chatRepository';
 import { useChatStorage } from '@/hooks/useChatStorage';
 
@@ -65,6 +70,11 @@ export function useChat() {
 
   const sendMessage = useCallback(async (content: string) => {
     if (!content.trim() || status !== 'idle') return;
+    const cooldown = getChatCooldownSnapshot();
+    if (cooldown.isActive) {
+      setErrorState(`무료 플랜 보호를 위해 ${cooldown.remainingSeconds}초 후 다시 요청할 수 있습니다.`);
+      return;
+    }
 
     let conversationId = currentConversationId;
     
@@ -94,6 +104,8 @@ export function useChat() {
     setCurrentResponse('');
     setCurrentMetadata(null);
     setErrorState(null);
+    setStatus('thinking');
+    startChatCooldown(CHAT_COOLDOWN_SECONDS);
 
     try {
       let fullResponse = '';
@@ -160,20 +172,33 @@ export function useChat() {
       }
     } catch (error) {
       let errorMessage = 'An error occurred';
-      if (error instanceof Error) {
+      if (error instanceof ChatRateLimitError) {
+        startChatCooldown(error.retryAfterSeconds);
+        await chatRepository.deleteMessages([userMessage.id]);
+        errorMessage = `요청 간격 제한 중입니다. ${error.retryAfterSeconds}초 후 다시 시도해주세요.`;
+      } else if (error instanceof Error) {
         errorMessage = error.message;
         
         if (errorMessage.includes('403')) {
           errorMessage = '보안 정책에 의해 차단된 메시지입니다.';
         } else if (errorMessage.includes('400')) {
           errorMessage = '잘못된 요청입니다. 메시지 길이를 확인해주세요.';
+        } else if (errorMessage.includes('429')) {
+          errorMessage = '요청 간격 제한 중입니다. 잠시 후 다시 시도해주세요.';
         }
       }
       
       setStatus('idle');
       setErrorState(errorMessage);
     }
-  }, [status, currentConversationId, promptConfig, storedMessages.length, createNewConversation, updateConversationTitle]);
+  }, [
+    status,
+    currentConversationId,
+    promptConfig,
+    storedMessages.length,
+    createNewConversation,
+    updateConversationTitle,
+  ]);
 
   const clearMessages = useCallback(async () => {
     if (currentConversationId) {
@@ -204,7 +229,8 @@ export function useChat() {
   }, []);
 
   const regenerateLastResponse = useCallback(async () => {
-    if (status !== 'idle' || storedMessages.length === 0 || !currentConversationId) return;
+    const cooldown = getChatCooldownSnapshot();
+    if (status !== 'idle' || cooldown.isActive || storedMessages.length === 0 || !currentConversationId) return;
 
     let lastUserMessageIndex = -1;
     for (let i = storedMessages.length - 1; i >= 0; i--) {

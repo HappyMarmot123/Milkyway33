@@ -5,6 +5,16 @@ import type { ChatEvent, ChatPromptConfig } from '@/features/chat/types';
 // Override with VITE_API_BASE_URL if the backend lives elsewhere.
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api/v1';
 
+export class ChatRateLimitError extends Error {
+  retryAfterSeconds: number;
+
+  constructor(retryAfterSeconds: number) {
+    super(`RATE_LIMITED:${retryAfterSeconds}`);
+    this.name = 'ChatRateLimitError';
+    this.retryAfterSeconds = retryAfterSeconds;
+  }
+}
+
 /**
  * Streaming chat API client
  * Yields ChatEvent objects as they arrive from the server
@@ -31,6 +41,12 @@ export async function* streamChat(message: string, config?: ChatPromptConfig): A
     },
     body: JSON.stringify(body),
   });
+
+  if (response.status === 429) {
+    const retryAfterHeader = response.headers.get('Retry-After');
+    const retryAfterSeconds = Math.max(1, Number.parseInt(retryAfterHeader || '60', 10) || 60);
+    throw new ChatRateLimitError(retryAfterSeconds);
+  }
 
   if (!response.ok) {
     throw new Error(`API Error: ${response.status} ${response.statusText}`);
