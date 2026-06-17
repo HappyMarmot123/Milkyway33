@@ -25,6 +25,7 @@ import {
   MoreHorizontal,
   Pencil,
   Trash2,
+  Github,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useChatActions, useChatConversations } from "@/contexts/ChatContext";
@@ -239,9 +240,18 @@ export function AppSidebar() {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-
+				
           {/* Footer - Settings with subtle divider */}
           <div className="mt-auto pb-4">
+            <a
+              href="https://github.com/HappyMarmot123"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-3 py-2 mb-1 text-[11px] text-muted-foreground/50 hover:text-muted-foreground/80 transition-colors duration-200"
+            >
+              <Github className="h-3.5 w-3.5 shrink-0" />
+              <span>Made by @HappyMarmot123</span>
+            </a>
             <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mb-4" />
             <SidebarMenu>
               <SidebarMenuItem>

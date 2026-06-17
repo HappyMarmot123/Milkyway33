@@ -122,15 +122,6 @@ const CooldownSubmitArea = memo(({ cooldown, input, status, submitStatus }: Cool
 
 CooldownSubmitArea.displayName = "CooldownSubmitArea";
 
-const CooldownDisclaimer = memo(() => {
-  return (
-    <p className="text-[10px] sm:text-[11px] text-muted-foreground text-center mt-3">
-      Milkyway-33 / Made by @HappyMarmot123
-    </p>
-  );
-});
-
-CooldownDisclaimer.displayName = "CooldownDisclaimer";
 
 interface ComposerInputControlsProps {
   cooldown: ChatCooldown;
@@ -299,7 +290,6 @@ const ChatComposer = memo(({ sidebarState, onOpenConfig }: ChatComposerProps) =>
           </div>
         </div>
 
-        <CooldownDisclaimer />
       </div>
     </div>
   );

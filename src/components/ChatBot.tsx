@@ -75,7 +75,7 @@ const ChatBot = memo(() => {
 
                 <div className="relative group cursor-default">
                   <h1 className="text-5xl sm:text-7xl font-bold tracking-tighter pb-2">
-                    <span className="bg-gradient-to-br from-[#ff6b35] via-[#ff9f43] to-[#ffc107] bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(255,107,53,0.3)]">
+                    <span className="p-2 bg-gradient-to-br from-[#ff6b35] via-[#ff9f43] to-[#ffc107] bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(255,107,53,0.3)]">
                       Milky Way
                     </span>
                   </h1>
