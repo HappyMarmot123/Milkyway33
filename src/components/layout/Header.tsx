@@ -1,5 +1,6 @@
+import { memo } from "react";
 import { useLocation } from "react-router-dom";
-import { useChatContext } from "@/contexts/ChatContext";
+import { useChatRuntime } from "@/contexts/ChatContext";
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { Sparkles, Settings, MessageCircle } from "lucide-react";
 
@@ -8,32 +9,32 @@ const PAGE_CONFIG: Record<string, { title: string; icon: React.ReactNode }> = {
   "/settings": { title: "설정", icon: <Settings className="h-5 w-5" /> },
 };
 
+const STATUS_CONFIG: Record<string, { label: string; gradient: string; pulse: boolean }> = {
+  thinking: {
+    label: "생각하는 중...",
+    gradient: "from-purple-500 via-pink-500 to-indigo-500",
+    pulse: true,
+  },
+  generating: {
+    label: "생성 중...",
+    gradient: "from-blue-500 via-cyan-400 to-teal-500",
+    pulse: true,
+  },
+  streaming: {
+    label: "응답 중...",
+    gradient: "from-green-400 via-emerald-500 to-teal-500",
+    pulse: true,
+  },
+  idle: {
+    label: "준비됨",
+    gradient: "from-gray-400 to-gray-500",
+    pulse: false,
+  },
+};
+
 // Animated status indicator with Gemini-style gradient
-const StatusIndicator = ({ status }: { status: string }) => {
-  const statusConfig: Record<string, { label: string; gradient: string; pulse: boolean }> = {
-    thinking: { 
-      label: "생각하는 중...", 
-      gradient: "from-purple-500 via-pink-500 to-indigo-500",
-      pulse: true 
-    },
-    generating: { 
-      label: "생성 중...", 
-      gradient: "from-blue-500 via-cyan-400 to-teal-500",
-      pulse: true 
-    },
-    streaming: { 
-      label: "응답 중...", 
-      gradient: "from-green-400 via-emerald-500 to-teal-500",
-      pulse: true 
-    },
-    idle: { 
-      label: "준비됨", 
-      gradient: "from-gray-400 to-gray-500",
-      pulse: false 
-    },
-  };
-  
-  const config = statusConfig[status] || statusConfig.idle;
+const StatusIndicator = memo(({ status }: { status: string }) => {
+  const config = STATUS_CONFIG[status] || STATUS_CONFIG.idle;
   
   return (
     <div className="flex items-center gap-2">
@@ -55,11 +56,13 @@ const StatusIndicator = ({ status }: { status: string }) => {
       </span>
     </div>
   );
-};
+});
+
+StatusIndicator.displayName = "StatusIndicator";
 
 export function Header() {
   const location = useLocation();
-  const { status } = useChatContext();
+  const { status } = useChatRuntime();
   const { isMobile, open, openMobile } = useSidebar();
   const pageConfig = PAGE_CONFIG[location.pathname] || { title: "LLM Chat", icon: <Sparkles className="h-5 w-5" /> };
   const isSidebarOpen = isMobile ? openMobile : open;

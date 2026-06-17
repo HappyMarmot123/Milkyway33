@@ -2,7 +2,7 @@ import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { AppSidebar } from "./AppSidebar";
 import { Header } from "./Header";
-import { ChatProvider } from "@/contexts/ChatContext";
+import { ChatProvider } from "@/contexts/ChatProvider";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   return (

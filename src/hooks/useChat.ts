@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { ChatRateLimitError, streamChat } from '@/api/chat';
 import type { 
   ChatMessage, 
@@ -18,6 +18,8 @@ function generateId(): string {
   return `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 }
 
+const EMPTY_PROMPT_CONFIG: ChatPromptConfig = { systemInstruction: '', examples: [] };
+
 export function useChat() {
   // Current conversation ID
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
@@ -31,7 +33,10 @@ export function useChat() {
   const [currentMetadata, setCurrentMetadata] = useState<ChatMetadata | null>(null);
   const [error, setErrorState] = useState<string | null>(null);
 
-  const promptConfig: ChatPromptConfig = storedSettings || { systemInstruction: '', examples: [] };
+  const promptConfig: ChatPromptConfig = useMemo(
+    () => storedSettings ?? EMPTY_PROMPT_CONFIG,
+    [storedSettings],
+  );
 
   const setPromptConfig = useCallback((config: Partial<ChatPromptConfig>) => {
     const newConfig = { ...promptConfig, ...config };

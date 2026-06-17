@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useCallback, useState } from "react";
 import ChatBot from "@/components/ChatBot";
 import { TokenUsage } from "@/components/features/TokenUsage";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import {
 import type { ChatMetadata } from "@/features/chat/types";
 
 // Floating metadata panel component
-const MetadataPanel = ({ 
+const MetadataPanel = memo(({ 
   metadata, 
   isExpanded, 
   onToggle 
@@ -116,10 +116,12 @@ const MetadataPanel = ({
       </Collapsible>
     </div>
   );
-};
+});
+
+MetadataPanel.displayName = "MetadataPanel";
 
 // Stat card component for the expanded panel
-const StatCard = ({ 
+const StatCard = memo(({ 
   icon, 
   label, 
   value 
@@ -135,15 +137,21 @@ const StatCard = ({
     </div>
     <span className="text-sm sm:text-base font-semibold text-foreground/90 truncate">{value}</span>
   </div>
-);
+));
+
+StatCard.displayName = "StatCard";
 
 export function ChatPage() {
   const [isInfoExpanded, setIsInfoExpanded] = useState(false);
   const [lastMetadata, setLastMetadata] = useState<ChatMetadata | null>(null);
 
-  const handleMetadataUpdate = (metadata: ChatMetadata) => {
+  const handleMetadataUpdate = useCallback((metadata: ChatMetadata) => {
     setLastMetadata(metadata);
-  };
+  }, []);
+
+  const handleToggleInfo = useCallback(() => {
+    setIsInfoExpanded((value) => !value);
+  }, []);
 
   return (
     <main aria-label="chat-page" className="relative flex flex-col h-full">
@@ -165,7 +173,7 @@ export function ChatPage() {
       <MetadataPanel 
         metadata={lastMetadata}
         isExpanded={isInfoExpanded}
-        onToggle={() => setIsInfoExpanded(!isInfoExpanded)}
+        onToggle={handleToggleInfo}
       />
     </main>
   );

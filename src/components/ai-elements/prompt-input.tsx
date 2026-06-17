@@ -56,6 +56,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  memo,
   useMemo,
   useRef,
   useState,
@@ -364,7 +365,7 @@ export const PromptInputActionAddAttachments = ({
   );
 };
 
-const PromptInputImpl = ({
+const PromptInputImpl = memo(({
   className,
   accept,
   multiple,
@@ -686,18 +687,20 @@ const PromptInputImpl = ({
       {inner}
     </LocalAttachmentsContext.Provider>
   );
-};
+});
+PromptInputImpl.displayName = "PromptInput";
 
-export const PromptInput = PromptInputImpl as (
+export const PromptInput = PromptInputImpl as unknown as (
   props: PromptInputProps
 ) => ReactNode;
 
-export const PromptInputBody = ({
+export const PromptInputBody = memo(({
   className,
   ...props
 }: ComponentProps<"div">) => (
   <div className={cn("contents", className)} {...props} />
-);
+));
+PromptInputBody.displayName = "PromptInputBody";
 
 const PromptInputTextareaImpl = ({
   onChange,
@@ -807,7 +810,7 @@ export const PromptInputHeader = ({
     {...props} />
 );
 
-export const PromptInputFooter = ({
+export const PromptInputFooter = memo(({
   className,
   ...props
 }: ComponentProps<"div">) => (
@@ -815,16 +818,18 @@ export const PromptInputFooter = ({
     align="block-end"
     className={cn("justify-between gap-1", className)}
     {...props} />
-);
+));
+PromptInputFooter.displayName = "PromptInputFooter";
 
-export const PromptInputTools = ({
+export const PromptInputTools = memo(({
   className,
   ...props
 }: ComponentProps<"div">) => (
   <div className={cn("flex items-center gap-1", className)} {...props} />
-);
+));
+PromptInputTools.displayName = "PromptInputTools";
 
-export const PromptInputButton = ({
+export const PromptInputButton = memo(({
   variant = "ghost",
   className,
   size,
@@ -841,7 +846,8 @@ export const PromptInputButton = ({
       variant={variant}
       {...props} />
   );
-};
+});
+PromptInputButton.displayName = "PromptInputButton";
 
 export const PromptInputActionMenu = (props) => (
   <DropdownMenu {...props} />

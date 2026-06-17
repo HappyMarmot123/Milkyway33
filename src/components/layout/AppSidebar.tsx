@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { ChangeEvent, KeyboardEvent } from "react";
 import {
   Sidebar,
@@ -27,58 +27,57 @@ import {
   Trash2,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
-import { useChatContext } from "@/contexts/ChatContext";
+import { useChatActions, useChatConversations } from "@/contexts/ChatContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 export function AppSidebar() {
   const location = useLocation();
-  const { 
-    conversations, 
-    currentConversationId, 
-    createNewConversation, 
+  const { conversations, currentConversationId } = useChatConversations();
+  const {
+    createNewConversation,
     switchConversation,
     deleteConversation,
     renameConversation,
-  } = useChatContext();
+  } = useChatActions();
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
 
   // Get recent conversations (up to 10 for sidebar display)
-  const recentConversations = conversations.slice(0, 10);
+  const recentConversations = useMemo(() => conversations.slice(0, 10), [conversations]);
 
-  const handleNewChat = async () => {
+  const handleNewChat = useCallback(async () => {
     await createNewConversation();
-  };
+  }, [createNewConversation]);
 
-  const handleConversationClick = (conversationId: string) => {
+  const handleConversationClick = useCallback((conversationId: string) => {
     if (editingId !== conversationId) {
       switchConversation(conversationId);
     }
-  };
+  }, [editingId, switchConversation]);
 
-  const handleRenameStart = (conv: { id: string; title: string }) => {
+  const handleRenameStart = useCallback((conv: { id: string; title: string }) => {
     setEditingId(conv.id);
     setEditingTitle(conv.title);
-  };
+  }, []);
 
-  const handleRenameSubmit = async () => {
+  const handleRenameSubmit = useCallback(async () => {
     if (editingId && editingTitle.trim()) {
       await renameConversation(editingId, editingTitle.trim());
     }
     setEditingId(null);
     setEditingTitle("");
-  };
+  }, [editingId, editingTitle, renameConversation]);
 
-  const handleRenameCancel = () => {
+  const handleRenameCancel = useCallback(() => {
     setEditingId(null);
     setEditingTitle("");
-  };
+  }, []);
 
-  const handleDelete = async (conversationId: string) => {
+  const handleDelete = useCallback(async (conversationId: string) => {
     await deleteConversation(conversationId);
-  };
+  }, [deleteConversation]);
 
   return (
     <section aria-label="app-sidebar">
