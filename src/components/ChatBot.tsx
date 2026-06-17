@@ -1,6 +1,6 @@
-import { memo, useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useState } from "react";
 import { useSidebar } from "@/components/ui/sidebar";
-import { fetchDailyUsage } from "@/api/chat";
+import { useDailyUsageQuery } from "@/api/dailyUsage";
 import {
   Conversation,
   ConversationContent,
@@ -11,14 +11,18 @@ import { PromptConfigModal } from "@/components/features/PromptConfigModal";
 import { ChatComposer } from "@/components/chat/ChatComposer";
 import { MessageList } from "@/components/chat/MessageList";
 import { StreamingPreview } from "@/components/chat/StreamingPreview";
+import StarField from "@/components/ui/StarField";
 import {
   useChatActions,
   useChatConfig,
   useChatHasMessages,
   useChatRuntime,
 } from "@/contexts/ChatContext";
-import { DAILY_LIMIT, setChatDailyUsage } from "@/features/chat/dailyUsageStore";
 import type { ChatPromptConfig } from "@/features/chat/types";
+
+const ambientGlow = (
+  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-gradient-to-tr from-orange-500/10 via-amber-500/5 to-transparent rounded-full blur-[100px] pointer-events-none" />
+);
 
 const ChatBot = memo(() => {
   const [isConfigOpen, setIsConfigOpen] = useState(false);
@@ -28,25 +32,8 @@ const ChatBot = memo(() => {
   const { clearError, setPromptConfig } = useChatActions();
   const { promptConfig } = useChatConfig();
 
-  useEffect(() => {
-    let isMounted = true;
-
-    fetchDailyUsage()
-      .then((usage) => {
-        if (isMounted) {
-          setChatDailyUsage(usage);
-        }
-      })
-      .catch(() => {
-        if (isMounted) {
-          setChatDailyUsage({ limit: DAILY_LIMIT, remaining: DAILY_LIMIT });
-        }
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  // 마운트 시 일일 사용량 조회 — TanStack Query가 캐싱·에러 처리를 담당
+  useDailyUsageQuery();
 
   const handleOpenConfig = useCallback(() => {
     setIsConfigOpen(true);
@@ -71,7 +58,8 @@ const ChatBot = memo(() => {
           <ConversationContent className="h-full align-middle pb-56">
             {!hasMessages && status === "idle" && (
               <div className="flex flex-col items-center justify-center h-full text-center space-y-8 animate-in fade-in zoom-in-95 duration-500 select-none">
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-gradient-to-tr from-orange-500/10 via-amber-500/5 to-transparent rounded-full blur-[100px] pointer-events-none" />
+                <StarField />
+                {ambientGlow}
 
                 <div className="relative group cursor-default">
                   <h1 className="text-5xl sm:text-7xl font-bold tracking-tighter pb-2">

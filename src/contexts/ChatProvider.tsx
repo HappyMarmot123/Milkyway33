@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useMemo, useRef } from "react";
+import { ReactNode, useMemo, useRef } from "react";
 import {
   ChatActionsContext,
   ChatConfigContext,
@@ -20,10 +20,7 @@ import { useChat } from "@/hooks/useChat";
 export function ChatProvider({ children }: { children: ReactNode }) {
   const chat = useChat();
   const chatRef = useRef(chat);
-
-  useEffect(() => {
-    chatRef.current = chat;
-  }, [chat]);
+  chatRef.current = chat;
 
   const actions = useMemo<ChatActionsContextType>(() => ({
     sendMessage: (...args) => chatRef.current.sendMessage(...args),

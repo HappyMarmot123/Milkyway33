@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useMemo, useRef, useState } from "react";
 import { Gauge, RefreshCcwIcon, Settings2, Sparkles, TimerReset } from "lucide-react";
 import {
   PromptInput,
@@ -136,21 +136,22 @@ const ComposerInputControls = memo(({
 }: ComposerInputControlsProps) => {
   const [input, setInput] = useState("");
   const inputRef = useRef(input);
-  const { status } = useChatRuntime();
-  const { sendMessage } = useChatActions();
+  inputRef.current = input;
 
-  useEffect(() => {
-    inputRef.current = input;
-  }, [input]);
+  const { status } = useChatRuntime();
+  const statusRef = useRef(status);
+  statusRef.current = status;
+
+  const { sendMessage } = useChatActions();
 
   const handleSubmit = useCallback((message: { text?: string }) => {
     const text = message.text || inputRef.current;
     const cooldown = getChatCooldownSnapshot();
-    if (!text.trim() || status !== "idle" || cooldown.isActive) return;
+    if (!text.trim() || statusRef.current !== "idle" || cooldown.isActive) return;
 
     sendMessage(text);
     setInput("");
-  }, [sendMessage, status]);
+  }, [sendMessage]);
 
   const handleInputChange = useCallback((value: string) => {
     setInput(value);
