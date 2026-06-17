@@ -135,7 +135,7 @@ export async function* streamChat(
       setChatDailyUsage(limitedUsage);
       throw new ChatDailyLimitError();
     }
-    const retryAfterSeconds = Math.max(1, Number.parseInt(retryAfterHeader || '60', 10) || 60);
+    const retryAfterSeconds = Math.max(1, Number.parseInt(retryAfterHeader || '10', 10) || 10);
     throw new ChatRateLimitError(retryAfterSeconds);
   }
 

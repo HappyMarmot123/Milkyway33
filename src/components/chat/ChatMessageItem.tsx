@@ -15,27 +15,17 @@ import { useChatActions } from "@/contexts/ChatContext";
 
 interface ChatMessageItemProps {
   message: ChatMessage;
-  isLast: boolean;
-  onRegenerate: () => void;
 }
 
-const ChatMessageItem = memo(({ message, isLast, onRegenerate }: ChatMessageItemProps) => {
+const ChatMessageItem = memo(({ message }: ChatMessageItemProps) => {
   const { setMessageLiked } = useChatActions();
 
-  const handleRegenerate = useCallback(() => {
-    if (isLast) {
-      onRegenerate();
-    }
-  }, [isLast, onRegenerate]);
-
-  const handleFeedback = useCallback((type: 'up' | 'down' | null) => {
+  const handleFeedback = useCallback((type: 'up' | null) => {
     if (message.role !== 'assistant') return;
-    setMessageLiked(message.id, type === 'up' ? true : type === 'down' ? false : null);
+    setMessageLiked(message.id, type === 'up' ? true : null);
   }, [message.id, message.role, setMessageLiked]);
 
-  const feedbackState = message.liked === true ? 'up'
-    : message.liked === false ? 'down'
-    : null;
+  const feedbackState = message.liked === true ? 'up' : null;
 
   return (
     <div>
@@ -53,7 +43,6 @@ const ChatMessageItem = memo(({ message, isLast, onRegenerate }: ChatMessageItem
         {message.role === "assistant" && (
           <ResponseActionContainer
             content={message.content}
-            onRegenerate={handleRegenerate}
             onFeedback={handleFeedback}
             feedbackState={feedbackState}
           />

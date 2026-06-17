@@ -6,7 +6,7 @@ export interface ChatMessage {
   content: string;
   timestamp: Date;
   metadata?: ChatMetadata;
-  liked?: true | false | null;
+  liked?: true | null;
   pinned?: boolean;
 }
 

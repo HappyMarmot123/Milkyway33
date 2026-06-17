@@ -3,14 +3,11 @@ import { useState } from "react";
 import type { ComponentType } from "react";
 import { 
   ThumbsUp, 
-  ThumbsDown, 
-  RotateCw, 
   Copy, 
   MoreVertical, 
   Check,
   Volume2,
-  FileText,
-  Mail
+  FileText
 } from "lucide-react";
 import {
   Tooltip,
@@ -27,9 +24,8 @@ import {
 
 interface ResponseActionContainerProps {
   content: string;
-  onRegenerate?: () => void;
-  onFeedback?: (type: 'up' | 'down' | null) => void;
-  feedbackState?: 'up' | 'down' | null;
+  onFeedback?: (type: 'up' | null) => void;
+  feedbackState?: 'up' | null;
   className?: string;
 }
 
@@ -73,7 +69,6 @@ function ActionButton({
 
 export function ResponseActionContainer({ 
   content, 
-  onRegenerate, 
   onFeedback,
   feedbackState = null,
   className = ""
@@ -90,7 +85,7 @@ export function ResponseActionContainer({
     }
   };
 
-  const handleFeedback = (type: 'up' | 'down') => {
+  const handleFeedback = (type: 'up') => {
     const next = feedbackState === type ? null : type;
     onFeedback?.(next);
   };
@@ -102,17 +97,6 @@ export function ResponseActionContainer({
         label="Good response" 
         onClick={() => handleFeedback('up')}
         isActive={feedbackState === 'up'}
-      />
-      <ActionButton 
-        icon={ThumbsDown} 
-        label="Bad response" 
-        onClick={() => handleFeedback('down')}
-        isActive={feedbackState === 'down'}
-      />
-      <ActionButton 
-        icon={RotateCw} 
-        label="Regenerate" 
-        onClick={() => onRegenerate?.()} 
       />
       <ActionButton 
         icon={isCopied ? Check : Copy} 
@@ -150,10 +134,6 @@ export function ResponseActionContainer({
           <DropdownMenuItem className="focus:bg-zinc-800 focus:text-zinc-100 cursor-pointer gap-2">
             <FileText className="h-4 w-4" />
             <span>Export to Docs</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem className="focus:bg-zinc-800 focus:text-zinc-100 cursor-pointer gap-2">
-            <Mail className="h-4 w-4" />
-            <span>Email Send</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

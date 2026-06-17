@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 
-export const CHAT_COOLDOWN_SECONDS = 60;
+export const CHAT_COOLDOWN_SECONDS = 10;
 
 const CHAT_COOLDOWN_STORAGE_KEY = 'milkyway_chat_cooldown_until';
 

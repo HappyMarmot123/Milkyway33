@@ -259,33 +259,10 @@ export function useChat() {
 
   const setMessageLiked = useCallback(async (
     messageId: string,
-    liked: true | false | null
+    liked: true | null
   ) => {
     await chatRepository.setMessageLiked(messageId, liked);
   }, []);
-
-  const regenerateLastResponse = useCallback(async () => {
-    const cooldown = getChatCooldownSnapshot();
-    if (status !== 'idle' || cooldown.isActive || storedMessages.length === 0 || !currentConversationId) return;
-
-    let lastUserMessageIndex = -1;
-    for (let i = storedMessages.length - 1; i >= 0; i--) {
-      if (storedMessages[i].role === 'user') {
-        lastUserMessageIndex = i;
-        break;
-      }
-    }
-    if (lastUserMessageIndex === -1) return;
-
-    const lastUserMessage = storedMessages[lastUserMessageIndex];
-    if (!lastUserMessage) return;
-
-    const messagesToDelete = storedMessages.slice(lastUserMessageIndex).map(m => m.id);
-    await chatRepository.deleteMessages(messagesToDelete);
-    
-    sendMessage(lastUserMessage.content);
-
-  }, [status, storedMessages, currentConversationId, sendMessage]);
 
   return {
     // State
@@ -301,7 +278,6 @@ export function useChat() {
     
     // Actions
     sendMessage,
-    regenerateLastResponse,
     clearMessages,
     clearError,
     setError,

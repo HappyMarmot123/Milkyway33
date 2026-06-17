@@ -264,7 +264,7 @@ const ChatComposer = memo(({ sidebarState, onOpenConfig }: ChatComposerProps) =>
 
   return (
     <div
-      className="fixed bottom-0 right-0 z-40 transition-all duration-200 ease-linear"
+      className="fixed bottom-6 right-0 z-40 transition-all duration-200 ease-linear"
       style={wrapperStyle}
     >
       <div className="absolute bottom-full left-0 right-0 h-8 bg-gradient-to-t from-bg-100 via-bg-100/60 to-transparent pointer-events-none" />

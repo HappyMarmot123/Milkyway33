@@ -73,7 +73,7 @@ export const chatRepository = {
 
   async setMessageLiked(
     messageId: string,
-    liked: true | false | null
+    liked: true | null
   ): Promise<void> {
     const db = dexieInit();
     await db.messages.update(messageId, {

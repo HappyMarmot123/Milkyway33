@@ -8,10 +8,11 @@ from upstash_redis import Redis
 redis = Redis.from_env()
 
 DAILY_LIMIT = 13
+CHAT_COOLDOWN_SECONDS = 10
 
 cooldown_limiter = Ratelimit(
     redis=redis,
-    limiter=FixedWindow(max_requests=1, window=60),       # 60초
+    limiter=FixedWindow(max_requests=1, window=CHAT_COOLDOWN_SECONDS),
     prefix="cooldown",
 )
 
@@ -67,7 +68,7 @@ def enforce_limits(request: Request) -> dict[str, int]:
 
     cooldown = cooldown_limiter.limit(key)
     if not cooldown.allowed:
-        retry_after = get_retry_after_seconds(cooldown.reset, 60)
+        retry_after = get_retry_after_seconds(cooldown.reset, CHAT_COOLDOWN_SECONDS)
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail={

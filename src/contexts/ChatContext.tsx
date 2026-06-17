@@ -6,7 +6,6 @@ type ChatContextType = ReturnType<typeof useChat>;
 export type ChatActionsContextType = Pick<
   ChatContextType,
   | 'sendMessage'
-  | 'regenerateLastResponse'
   | 'clearMessages'
   | 'clearError'
   | 'setError'

@@ -24,7 +24,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
   const actions = useMemo<ChatActionsContextType>(() => ({
     sendMessage: (...args) => chatRef.current.sendMessage(...args),
-    regenerateLastResponse: (...args) => chatRef.current.regenerateLastResponse(...args),
     clearMessages: (...args) => chatRef.current.clearMessages(...args),
     clearError: (...args) => chatRef.current.clearError(...args),
     setError: (...args) => chatRef.current.setError(...args),
