@@ -80,18 +80,25 @@ interface CooldownSubmitAreaProps {
 const CooldownSubmitArea = memo(({ cooldown, input, status, submitStatus }: CooldownSubmitAreaProps) => {
   const cooldownLabel = `${cooldown.remainingSeconds}초`;
   const dailyUsage = useChatDailyUsage();
-  const canSubmit = input.trim() && !cooldown.isActive && dailyUsage.remaining > 0 && status === "idle";
-  const usedCount = dailyUsage.limit - dailyUsage.remaining;
+  const isDailyUsageLoading = dailyUsage.remaining === null;
+  const isDailyLimitReached = dailyUsage.remaining !== null && dailyUsage.remaining <= 0;
+  const canSubmit = Boolean(input.trim()) && !cooldown.isActive && !isDailyLimitReached && status === "idle";
+  const usedCount = dailyUsage.remaining === null ? null : dailyUsage.limit - dailyUsage.remaining;
 
   return (
     <div className="flex items-center gap-2">
       <div className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-medium ${
-        dailyUsage.remaining <= 0
+        isDailyLimitReached
           ? "border-red-500/20 bg-red-500/10 text-red-200"
-          : "border-emerald-500/20 bg-emerald-500/10 text-emerald-200"
+          : isDailyUsageLoading
+            ? "border-white/10 bg-white/5 text-muted-foreground"
+            : "border-emerald-500/20 bg-emerald-500/10 text-emerald-200"
       }`}>
-        <Gauge size={12} className={dailyUsage.remaining <= 0 ? "text-red-300" : "text-emerald-300"} />
-        <span>오늘 {usedCount}/{dailyUsage.limit}</span>
+        <Gauge
+          size={12}
+          className={isDailyLimitReached ? "text-red-300" : isDailyUsageLoading ? "text-muted-foreground" : "text-emerald-300"}
+        />
+        <span>{usedCount === null ? `오늘 .../${dailyUsage.limit}` : `오늘 ${usedCount}/${dailyUsage.limit}`}</span>
       </div>
 
       {cooldown.isActive && (

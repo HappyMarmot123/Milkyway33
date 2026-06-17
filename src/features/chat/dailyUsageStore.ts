@@ -1,15 +1,15 @@
 import { useSyncExternalStore } from 'react';
 
-const DAILY_LIMIT = 10;
+export const DAILY_LIMIT = 10;
 
 export interface ChatDailyUsageSnapshot {
   limit: number;
-  remaining: number;
+  remaining: number | null;
 }
 
 let snapshot: ChatDailyUsageSnapshot = {
   limit: DAILY_LIMIT,
-  remaining: DAILY_LIMIT,
+  remaining: null,
 };
 
 const listeners = new Set<() => void>();
@@ -28,12 +28,13 @@ export function getChatDailyUsageSnapshot() {
 }
 
 export function setChatDailyUsage(next: Partial<ChatDailyUsageSnapshot>) {
-  const limit = next.limit ?? snapshot.limit;
-  const remaining = next.remaining ?? snapshot.remaining;
-  const normalized = {
-    limit: Math.max(1, limit),
-    remaining: Math.max(0, Math.min(remaining, Math.max(1, limit))),
-  };
+  const limit = Math.max(1, next.limit ?? snapshot.limit);
+  const remaining = next.remaining === undefined
+    ? snapshot.remaining
+    : next.remaining === null
+      ? null
+      : Math.max(0, Math.min(next.remaining, limit));
+  const normalized = { limit, remaining };
 
   if (snapshot.limit === normalized.limit && snapshot.remaining === normalized.remaining) {
     return;
@@ -59,6 +60,6 @@ export function useChatDailyUsage() {
   return useSyncExternalStore(
     subscribe,
     () => snapshot,
-    () => ({ limit: DAILY_LIMIT, remaining: DAILY_LIMIT }),
+    () => ({ limit: DAILY_LIMIT, remaining: null }),
   );
 }

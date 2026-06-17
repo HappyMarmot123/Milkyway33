@@ -1,5 +1,6 @@
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 import { useSidebar } from "@/components/ui/sidebar";
+import { fetchDailyUsage } from "@/api/chat";
 import {
   Conversation,
   ConversationContent,
@@ -16,6 +17,7 @@ import {
   useChatHasMessages,
   useChatRuntime,
 } from "@/contexts/ChatContext";
+import { DAILY_LIMIT, setChatDailyUsage } from "@/features/chat/dailyUsageStore";
 import type { ChatPromptConfig } from "@/features/chat/types";
 
 const ChatBot = memo(() => {
@@ -26,6 +28,25 @@ const ChatBot = memo(() => {
   const { clearError, setPromptConfig } = useChatActions();
   const { promptConfig } = useChatConfig();
 
+  useEffect(() => {
+    let isMounted = true;
+
+    fetchDailyUsage()
+      .then((usage) => {
+        if (isMounted) {
+          setChatDailyUsage(usage);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setChatDailyUsage({ limit: DAILY_LIMIT, remaining: DAILY_LIMIT });
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleOpenConfig = useCallback(() => {
     setIsConfigOpen(true);

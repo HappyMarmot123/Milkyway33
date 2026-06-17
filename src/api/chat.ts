@@ -6,6 +6,81 @@ import { readChatDailyUsageHeaders, setChatDailyUsage } from '@/features/chat/da
 // Override with VITE_API_BASE_URL if the backend lives elsewhere.
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api/v1';
 
+export interface ChatDailyUsageResponse {
+  limit: number;
+  remaining: number;
+}
+
+const DAILY_USAGE_CACHE_TTL_MS = 30_000;
+let dailyUsageCache: { value: ChatDailyUsageResponse; expiresAt: number } | null = null;
+let pendingDailyUsageRequest: Promise<ChatDailyUsageResponse> | null = null;
+
+function normalizeDailyUsage(data: Partial<ChatDailyUsageResponse>): ChatDailyUsageResponse {
+  const limit = Number.isFinite(data.limit) ? Number(data.limit) : 10;
+  const normalizedLimit = Math.max(1, limit);
+  const remaining = Number.isFinite(data.remaining) ? Number(data.remaining) : normalizedLimit;
+
+  return {
+    limit: normalizedLimit,
+    remaining: Math.max(0, Math.min(remaining, normalizedLimit)),
+  };
+}
+
+function writeDailyUsageCache(usage: ChatDailyUsageResponse) {
+  dailyUsageCache = {
+    value: usage,
+    expiresAt: Date.now() + DAILY_USAGE_CACHE_TTL_MS,
+  };
+}
+
+function readDailyUsageFromHeaders(headers: Headers): ChatDailyUsageResponse | null {
+  const limit = Number.parseInt(headers.get('X-Daily-Limit') ?? '', 10);
+  const remaining = Number.parseInt(headers.get('X-Daily-Remaining') ?? '', 10);
+
+  if (!Number.isFinite(limit) || !Number.isFinite(remaining)) {
+    return null;
+  }
+
+  return normalizeDailyUsage({ limit, remaining });
+}
+
+function syncDailyUsageFromHeaders(headers: Headers) {
+  readChatDailyUsageHeaders(headers);
+
+  const usage = readDailyUsageFromHeaders(headers);
+  if (usage) {
+    writeDailyUsageCache(usage);
+  }
+}
+
+export async function fetchDailyUsage(): Promise<ChatDailyUsageResponse> {
+  if (dailyUsageCache && dailyUsageCache.expiresAt > Date.now()) {
+    return dailyUsageCache.value;
+  }
+
+  if (pendingDailyUsageRequest) {
+    return pendingDailyUsageRequest;
+  }
+
+  pendingDailyUsageRequest = fetch(`${API_BASE_URL}/chat/daily-usage`)
+    .then(async (response) => {
+      if (!response.ok) {
+        throw new Error(`Daily usage API Error: ${response.status} ${response.statusText}`);
+      }
+
+      syncDailyUsageFromHeaders(response.headers);
+
+      const usage = normalizeDailyUsage(await response.json());
+      writeDailyUsageCache(usage);
+      return usage;
+    })
+    .finally(() => {
+      pendingDailyUsageRequest = null;
+    });
+
+  return pendingDailyUsageRequest;
+}
+
 export class ChatRateLimitError extends Error {
   retryAfterSeconds: number;
 
@@ -51,18 +126,20 @@ export async function* streamChat(message: string, config?: ChatPromptConfig): A
   });
 
   if (response.status === 429) {
-    readChatDailyUsageHeaders(response.headers);
+    syncDailyUsageFromHeaders(response.headers);
     await response.json().catch(() => ({}));
     const retryAfterHeader = response.headers.get('Retry-After');
     if (retryAfterHeader === '86400') {
-      setChatDailyUsage({ remaining: 0 });
+      const limitedUsage = normalizeDailyUsage({ limit: dailyUsageCache?.value.limit, remaining: 0 });
+      writeDailyUsageCache(limitedUsage);
+      setChatDailyUsage(limitedUsage);
       throw new ChatDailyLimitError();
     }
     const retryAfterSeconds = Math.max(1, Number.parseInt(retryAfterHeader || '60', 10) || 60);
     throw new ChatRateLimitError(retryAfterSeconds);
   }
 
-  readChatDailyUsageHeaders(response.headers);
+  syncDailyUsageFromHeaders(response.headers);
 
   if (!response.ok) {
     throw new Error(`API Error: ${response.status} ${response.statusText}`);
