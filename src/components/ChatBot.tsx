@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useState } from "react";
 import { useSidebar } from "@/components/ui/sidebar";
 import {
   Conversation,
@@ -16,25 +16,16 @@ import {
   useChatHasMessages,
   useChatRuntime,
 } from "@/contexts/ChatContext";
-import type { ChatMetadata, ChatPromptConfig } from "@/features/chat/types";
+import type { ChatPromptConfig } from "@/features/chat/types";
 
-interface ChatBotProps {
-  onMetadataUpdate?: (metadata: ChatMetadata) => void;
-}
-
-const ChatBot = memo(({ onMetadataUpdate }: ChatBotProps) => {
+const ChatBot = memo(() => {
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const { state: sidebarState } = useSidebar();
   const { hasMessages } = useChatHasMessages();
-  const { status, currentMetadata, error } = useChatRuntime();
+  const { status, error } = useChatRuntime();
   const { clearError, setPromptConfig } = useChatActions();
   const { promptConfig } = useChatConfig();
 
-  useEffect(() => {
-    if (onMetadataUpdate && currentMetadata) {
-      onMetadataUpdate(currentMetadata);
-    }
-  }, [currentMetadata, onMetadataUpdate]);
 
   const handleOpenConfig = useCallback(() => {
     setIsConfigOpen(true);

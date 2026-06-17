@@ -47,8 +47,8 @@ export function AppSidebar() {
   const [editingTitle, setEditingTitle] = useState("");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  // Get recent conversations (up to 10 for sidebar display)
-  const recentConversations = useMemo(() => conversations.slice(0, 10), [conversations]);
+  // Get recent conversations (up to 5 for sidebar display)
+  const recentConversations = useMemo(() => conversations.slice(0, 5), [conversations]);
 
   const handleNewChat = useCallback(async () => {
     await createNewConversation();

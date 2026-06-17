@@ -110,6 +110,11 @@ export function startChatCooldown(seconds = CHAT_COOLDOWN_SECONDS) {
   emitIfChanged();
 }
 
+export function clearChatCooldown() {
+  localStorage.removeItem(CHAT_COOLDOWN_STORAGE_KEY);
+  emitIfChanged();
+}
+
 export function useChatCooldown() {
   return useSyncExternalStore(
     subscribe,

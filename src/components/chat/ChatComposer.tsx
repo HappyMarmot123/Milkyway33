@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { RefreshCcwIcon, Settings2, Sparkles, TimerReset } from "lucide-react";
+import { Gauge, RefreshCcwIcon, Settings2, Sparkles, TimerReset } from "lucide-react";
 import {
   PromptInput,
   PromptInputBody,
@@ -13,6 +13,7 @@ import {
   getChatCooldownSnapshot,
   useChatCooldown,
 } from "@/features/chat/cooldownStore";
+import { useChatDailyUsage } from "@/features/chat/dailyUsageStore";
 import {
   useChatActions,
   useChatConfig,
@@ -74,40 +75,31 @@ interface CooldownSubmitAreaProps {
   input: string;
   status: ChatStatus;
   submitStatus: SubmitStatus;
-  onSetError: (error: string) => void;
 }
 
-const CooldownSubmitArea = memo(({ cooldown, input, status, submitStatus, onSetError }: CooldownSubmitAreaProps) => {
+const CooldownSubmitArea = memo(({ cooldown, input, status, submitStatus }: CooldownSubmitAreaProps) => {
   const cooldownLabel = `${cooldown.remainingSeconds}초`;
-  const canSubmit = input.trim() && !cooldown.isActive && status === "idle";
+  const dailyUsage = useChatDailyUsage();
+  const canSubmit = input.trim() && !cooldown.isActive && dailyUsage.remaining > 0 && status === "idle";
+  const usedCount = dailyUsage.limit - dailyUsage.remaining;
 
   return (
     <div className="flex items-center gap-2">
+      <div className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-medium ${
+        dailyUsage.remaining <= 0
+          ? "border-red-500/20 bg-red-500/10 text-red-200"
+          : "border-emerald-500/20 bg-emerald-500/10 text-emerald-200"
+      }`}>
+        <Gauge size={12} className={dailyUsage.remaining <= 0 ? "text-red-300" : "text-emerald-300"} />
+        <span>오늘 {usedCount}/{dailyUsage.limit}</span>
+      </div>
+
       {cooldown.isActive && (
         <div className="flex items-center gap-1.5 rounded-lg border border-orange-500/20 bg-orange-500/10 px-2.5 py-1 text-[11px] font-medium text-orange-200">
           <TimerReset size={12} className="text-orange-300" />
           <span>{cooldownLabel}</span>
         </div>
       )}
-
-      <div className="hidden sm:flex gap-1.5 opacity-60 hover:opacity-100 transition-opacity">
-        <button
-          type="button"
-          onClick={() => onSetError("429 RESOURCE_EXHAUSTED: Quota exceeded test")}
-          className="text-[9px] bg-red-500/20 text-red-400/80 border border-red-500/30 px-1.5 py-0.5 rounded hover:bg-red-500/30 transition-colors"
-          title="Simulate 429 Error"
-        >
-          429
-        </button>
-        <button
-          type="button"
-          onClick={() => onSetError("500 INTERNAL_SERVER_ERROR test")}
-          className="text-[9px] bg-orange-500/20 text-orange-400/80 border border-orange-500/30 px-1.5 py-0.5 rounded hover:bg-orange-500/30 transition-colors"
-          title="Simulate 500 Error"
-        >
-          500
-        </button>
-      </div>
 
       <PromptInputSubmit
         disabled={!canSubmit}
@@ -123,12 +115,10 @@ const CooldownSubmitArea = memo(({ cooldown, input, status, submitStatus, onSetE
 
 CooldownSubmitArea.displayName = "CooldownSubmitArea";
 
-const CooldownDisclaimer = memo(({ cooldown }: { cooldown: ChatCooldown }) => {
+const CooldownDisclaimer = memo(() => {
   return (
     <p className="text-[10px] sm:text-[11px] text-muted-foreground text-center mt-3">
-      {cooldown.isActive
-        ? `무료 플랜 보호를 위해 요청 간 ${cooldown.remainingSeconds}초 대기 중`
-        : "Milkyway-33 / Made by @HappyMarmot123"}
+      Milkyway-33 / Made by @HappyMarmot123
     </p>
   );
 });
@@ -149,7 +139,7 @@ const ComposerInputControls = memo(({
   const [input, setInput] = useState("");
   const inputRef = useRef(input);
   const { status } = useChatRuntime();
-  const { sendMessage, setError } = useChatActions();
+  const { sendMessage } = useChatActions();
 
   useEffect(() => {
     inputRef.current = input;
@@ -204,7 +194,6 @@ const ComposerInputControls = memo(({
           input={input}
           status={status}
           submitStatus={submitStatus}
-          onSetError={setError}
         />
       </PromptInputFooter>
     </PromptInput>
@@ -303,7 +292,7 @@ const ChatComposer = memo(({ sidebarState, onOpenConfig }: ChatComposerProps) =>
           </div>
         </div>
 
-        <CooldownDisclaimer cooldown={cooldown} />
+        <CooldownDisclaimer />
       </div>
     </div>
   );

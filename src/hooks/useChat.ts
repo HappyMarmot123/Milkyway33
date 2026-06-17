@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import { ChatRateLimitError, streamChat } from '@/api/chat';
+import { ChatDailyLimitError, ChatRateLimitError, streamChat } from '@/api/chat';
 import type { 
   ChatMessage, 
   ChatMetadata, 
@@ -8,6 +8,7 @@ import type {
 } from '@/features/chat/types';
 import {
   CHAT_COOLDOWN_SECONDS,
+  clearChatCooldown,
   getChatCooldownSnapshot,
   startChatCooldown,
 } from '@/features/chat/cooldownStore';
@@ -43,11 +44,11 @@ export function useChat() {
     chatRepository.saveSettings(newConfig);
   }, [promptConfig]);
 
-  // Create a new conversation (max 10 sessions)
+  // Create a new conversation (max 5 sessions)
   const createNewConversation = useCallback(async () => {
     // Check conversation limit
-    if (conversations.length >= 10) {
-      setErrorState('대화 세션은 최대 10개까지 생성 가능합니다. 기존 대화를 삭제해주세요.');
+    if (conversations.length >= 5) {
+      setErrorState('대화 세션은 최대 5개까지 생성 가능합니다. 기존 대화를 삭제해주세요.');
       return null;
     }
     
@@ -177,7 +178,11 @@ export function useChat() {
       }
     } catch (error) {
       let errorMessage = 'An error occurred';
-      if (error instanceof ChatRateLimitError) {
+      if (error instanceof ChatDailyLimitError) {
+        clearChatCooldown();
+        await chatRepository.deleteMessages([userMessage.id]);
+        errorMessage = '오늘의 채팅 횟수(10회)를 모두 사용했습니다. 내일 다시 이용해주세요.';
+      } else if (error instanceof ChatRateLimitError) {
         startChatCooldown(error.retryAfterSeconds);
         await chatRepository.deleteMessages([userMessage.id]);
         errorMessage = `요청 간격 제한 중입니다. ${error.retryAfterSeconds}초 후 다시 시도해주세요.`;

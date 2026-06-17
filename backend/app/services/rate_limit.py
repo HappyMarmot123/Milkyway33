@@ -1,76 +1,92 @@
-import threading
 import time
-from dataclasses import dataclass
 
 from fastapi import HTTPException, Request, status
-
-from app.core.config import settings
-
-
-@dataclass(frozen=True)
-class RateLimitResult:
-    allowed: bool
-    retry_after: int = 0
+from upstash_ratelimit import FixedWindow, Ratelimit
+from upstash_redis import Redis
 
 
-class ChatRateLimiter:
-    def __init__(self, cooldown_seconds: int):
-        self.cooldown_seconds = max(1, cooldown_seconds)
-        self._next_allowed_by_key: dict[str, float] = {}
-        self._lock = threading.Lock()
+redis = Redis.from_env()
 
-    def _client_key(self, request: Request) -> str:
-        forwarded_for = request.headers.get("x-forwarded-for", "")
-        if forwarded_for:
-            client_host = forwarded_for.split(",", 1)[0].strip()
-        else:
-            client_host = request.client.host if request.client else "unknown"
+cooldown_limiter = Ratelimit(
+    redis=redis,
+    limiter=FixedWindow(max_requests=1, window=60),       # 60초
+    prefix="cooldown",
+)
 
-        user_agent = request.headers.get("user-agent", "unknown")[:120]
-        return f"{client_host}|{user_agent}"
+daily_limiter = Ratelimit(
+    redis=redis,
+    limiter=FixedWindow(max_requests=10, window=86400),   # 24시간
+    prefix="daily",
+)
 
-    def check_and_reserve(self, request: Request) -> RateLimitResult:
-        now = time.monotonic()
-        key = self._client_key(request)
 
-        with self._lock:
-            next_allowed_at = self._next_allowed_by_key.get(key, 0)
-            if next_allowed_at > now:
-                return RateLimitResult(
-                    allowed=False,
-                    retry_after=max(1, int(next_allowed_at - now)),
-                )
+def get_client_key(request: Request) -> str:
+    forwarded_for = request.headers.get("x-forwarded-for", "")
+    if forwarded_for:
+        return forwarded_for.split(",", 1)[0].strip()
 
-            self._next_allowed_by_key[key] = now + self.cooldown_seconds
-            self._cleanup(now)
-            return RateLimitResult(allowed=True)
+    return request.client.host if request.client else "unknown"
 
-    def _cleanup(self, now: float) -> None:
-        stale_before = now - self.cooldown_seconds
-        stale_keys = [
-            key
-            for key, next_allowed_at in self._next_allowed_by_key.items()
-            if next_allowed_at < stale_before
-        ]
-        for key in stale_keys:
-            del self._next_allowed_by_key[key]
 
-    def enforce(self, request: Request) -> None:
-        result = self.check_and_reserve(request)
-        if result.allowed:
-            return
+def get_retry_after_seconds(reset_at: float, fallback: int) -> int:
+    if not reset_at:
+        return fallback
 
+    return max(1, int(reset_at - time.time()))
+
+
+DAILY_LIMIT = 10
+
+
+def daily_headers(remaining: int) -> dict[str, str]:
+    return {
+        "X-Daily-Limit": str(DAILY_LIMIT),
+        "X-Daily-Remaining": str(max(0, remaining)),
+    }
+
+
+def raise_daily_limit() -> None:
+    raise HTTPException(
+        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        detail={
+            "message": "오늘의 채팅 횟수를 모두 사용했습니다. 내일 다시 이용해주세요.",
+        },
+        headers={
+            "Retry-After": "86400",
+            "Cache-Control": "no-store",
+            **daily_headers(0),
+        },
+    )
+
+
+def enforce_limits(request: Request) -> dict[str, int]:
+    key = get_client_key(request)
+    daily_remaining = daily_limiter.get_remaining(key)
+
+    if daily_remaining <= 0:
+        raise_daily_limit()
+
+    cooldown = cooldown_limiter.limit(key)
+    if not cooldown.allowed:
+        retry_after = get_retry_after_seconds(cooldown.reset, 60)
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail={
                 "message": "요청 간격 제한이 적용 중입니다.",
-                "retry_after": result.retry_after,
+                "retry_after": retry_after,
             },
             headers={
-                "Retry-After": str(result.retry_after),
+                "Retry-After": str(retry_after),
                 "Cache-Control": "no-store",
+                **daily_headers(daily_remaining),
             },
         )
 
+    daily = daily_limiter.limit(key)
+    if not daily.allowed:
+        raise_daily_limit()
 
-chat_rate_limiter = ChatRateLimiter(settings.CHAT_COOLDOWN_SECONDS)
+    return {
+        "limit": DAILY_LIMIT,
+        "remaining": daily.remaining,
+    }

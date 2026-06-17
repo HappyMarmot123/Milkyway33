@@ -4,8 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { TokenUsage } from "@/components/features/TokenUsage";
 import { chatRepository } from "@/services/chatRepository";
 import { Button } from "@/components/ui/button";
-import { RefreshCcw, Sparkles, Zap, Settings, ChevronRight, Cpu } from "lucide-react";
+import { AlertTriangle, RefreshCcw, Sparkles, Zap, Settings, ChevronRight, Cpu } from "lucide-react";
 import type { TokenUsageEntity } from "@/lib/db";
+import { useChatActions } from "@/contexts/ChatContext";
 
 const ModelOption = ({
   name,
@@ -82,6 +83,7 @@ export function SettingsPanel({ showHeader = true }: SettingsPanelProps) {
   const [tokenUsage, setTokenUsage] = useState({ inputTokens: 0, outputTokens: 0 });
   const [modelUsage, setModelUsage] = useState<TokenUsageEntity[]>([]);
   const [isResetting, setIsResetting] = useState(false);
+  const { setError } = useChatActions();
 
   const loadTokenUsage = useCallback(async () => {
     const [usage, usageByModel] = await Promise.all([
@@ -181,6 +183,47 @@ export function SettingsPanel({ showHeader = true }: SettingsPanelProps) {
                 </table>
               </div>
             )}
+          </CardContent>
+        </Card>
+      </section>
+
+
+      <section aria-label="debug-error-section" className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-75">
+        <Card className="min-w-0 bg-gradient-to-br from-bg-200/50 to-bg-100/50 backdrop-blur-xl border-white/10">
+          <CardHeader className="pb-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex items-center justify-center h-9 w-9 rounded-lg bg-gradient-to-br from-red-500/20 to-orange-500/10">
+                <AlertTriangle className="h-5 w-5 text-red-300" />
+              </div>
+              <div className="min-w-0">
+                <CardTitle className="text-base sm:text-lg">오류 테스트</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
+                  오류 모달과 복구 흐름을 확인합니다
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setError("429 RESOURCE_EXHAUSTED: Quota exceeded test")}
+                className="border-red-500/30 bg-red-500/10 text-red-200 hover:bg-red-500/20 hover:text-red-100"
+              >
+                429 테스트
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setError("500 INTERNAL_SERVER_ERROR test")}
+                className="border-orange-500/30 bg-orange-500/10 text-orange-200 hover:bg-orange-500/20 hover:text-orange-100"
+              >
+                500 테스트
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </section>

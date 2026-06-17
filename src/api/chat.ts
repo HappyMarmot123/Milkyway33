@@ -1,4 +1,5 @@
 import type { ChatEvent, ChatPromptConfig } from '@/features/chat/types';
+import { readChatDailyUsageHeaders, setChatDailyUsage } from '@/features/chat/dailyUsageStore';
 
 // In production (Vercel) the API is same-origin at /api/v1.
 // In local dev, Vite proxies /api to the FastAPI server (see vite.config.ts).
@@ -12,6 +13,13 @@ export class ChatRateLimitError extends Error {
     super(`RATE_LIMITED:${retryAfterSeconds}`);
     this.name = 'ChatRateLimitError';
     this.retryAfterSeconds = retryAfterSeconds;
+  }
+}
+
+export class ChatDailyLimitError extends Error {
+  constructor() {
+    super('DAILY_LIMIT_EXCEEDED');
+    this.name = 'ChatDailyLimitError';
   }
 }
 
@@ -43,10 +51,18 @@ export async function* streamChat(message: string, config?: ChatPromptConfig): A
   });
 
   if (response.status === 429) {
+    readChatDailyUsageHeaders(response.headers);
+    await response.json().catch(() => ({}));
     const retryAfterHeader = response.headers.get('Retry-After');
+    if (retryAfterHeader === '86400') {
+      setChatDailyUsage({ remaining: 0 });
+      throw new ChatDailyLimitError();
+    }
     const retryAfterSeconds = Math.max(1, Number.parseInt(retryAfterHeader || '60', 10) || 60);
     throw new ChatRateLimitError(retryAfterSeconds);
   }
+
+  readChatDailyUsageHeaders(response.headers);
 
   if (!response.ok) {
     throw new Error(`API Error: ${response.status} ${response.statusText}`);

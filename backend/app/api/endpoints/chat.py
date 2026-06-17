@@ -7,11 +7,11 @@ from app.services.gemini import gemini_service
 router = APIRouter()
 
 from app.services.guardrail import guardrail_service
-from app.services.rate_limit import chat_rate_limiter
+from app.services.rate_limit import enforce_limits
 
 @router.post("/chat") # Server-Sent Events (SSE)
 async def chat_stream(request: ChatRequest, http_request: Request):
-    chat_rate_limiter.enforce(http_request)
+    limits = enforce_limits(http_request)
     
     await guardrail_service.check_injection(request.message)
     safe_message = guardrail_service.format_with_delimiters(request.message)
@@ -26,5 +26,7 @@ async def chat_stream(request: ChatRequest, http_request: Request):
         headers={
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
+            "X-Daily-Limit": str(limits["limit"]),
+            "X-Daily-Remaining": str(limits["remaining"]),
         }
     )
