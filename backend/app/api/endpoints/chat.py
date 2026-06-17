@@ -1,8 +1,9 @@
 
 from fastapi import APIRouter, Request, Response
 from fastapi.responses import StreamingResponse
-from app.schemas.chat import ChatRequest, SummarizeRequest
+from app.schemas.chat import ChatRequest, ModelInfoResponse, SharedTokenUsageResponse, SummarizeRequest
 from app.services.gemini import gemini_service
+from app.services.token_usage import token_usage_service
 
 router = APIRouter()
 
@@ -81,3 +82,17 @@ async def summarize_conversation(request: SummarizeRequest):
         contents=contents,
     )
     return {"summary": response.text.strip()}
+
+
+@router.get("/chat/token-usage", response_model=SharedTokenUsageResponse)
+async def get_shared_token_usage():
+    """전체 사용자의 누적 토큰 사용량을 반환합니다."""
+    data = await token_usage_service.get_total()
+    return SharedTokenUsageResponse(**data)
+
+
+@router.get("/chat/model-info", response_model=ModelInfoResponse)
+async def get_model_info():
+    """현재 사용 중인 Gemini 모델의 메타데이터를 반환합니다."""
+    data = await gemini_service.get_model_info()
+    return ModelInfoResponse(**data)

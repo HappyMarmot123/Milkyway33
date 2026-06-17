@@ -200,7 +200,7 @@ export function useChat() {
       if (error instanceof ChatDailyLimitError) {
         clearChatCooldown();
         await chatRepository.deleteMessages([userMessage.id]);
-        errorMessage = '오늘의 채팅 횟수(10회)를 모두 사용했습니다. 내일 다시 이용해주세요.';
+        errorMessage = '오늘의 채팅 횟수(13회)를 모두 사용했습니다. 내일 다시 이용해주세요.';
       } else if (error instanceof ChatRateLimitError) {
         startChatCooldown(error.retryAfterSeconds);
         await chatRepository.deleteMessages([userMessage.id]);

@@ -7,6 +7,8 @@ from upstash_redis import Redis
 
 redis = Redis.from_env()
 
+DAILY_LIMIT = 13
+
 cooldown_limiter = Ratelimit(
     redis=redis,
     limiter=FixedWindow(max_requests=1, window=60),       # 60초
@@ -15,7 +17,7 @@ cooldown_limiter = Ratelimit(
 
 daily_limiter = Ratelimit(
     redis=redis,
-    limiter=FixedWindow(max_requests=10, window=86400),   # 24시간
+    limiter=FixedWindow(max_requests=DAILY_LIMIT, window=86400),   # 24시간
     prefix="daily",
 )
 
@@ -33,9 +35,6 @@ def get_retry_after_seconds(reset_at: float, fallback: int) -> int:
         return fallback
 
     return max(1, int(reset_at - time.time()))
-
-
-DAILY_LIMIT = 10
 
 
 def daily_headers(remaining: int) -> dict[str, str]:

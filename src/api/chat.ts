@@ -212,3 +212,58 @@ export async function summarizeConversation(
   const data = await res.json();
   return data.summary ?? '';
 }
+
+export interface SharedTokenUsage {
+  totalTokens: number;
+  inputTokens: number;
+  outputTokens: number;
+  thoughtsTokens: number;
+  cachedTokens: number;
+  requestCount: number;
+}
+
+export interface ChatModelInfo {
+  modelId: string;
+  displayName: string | null;
+  inputTokenLimit: number;
+  outputTokenLimit: number;
+}
+
+export async function fetchSharedTokenUsage(): Promise<SharedTokenUsage> {
+  const res = await fetch(`${API_BASE_URL}/chat/token-usage`);
+  if (!res.ok) {
+    return {
+      totalTokens: 0,
+      inputTokens: 0,
+      outputTokens: 0,
+      thoughtsTokens: 0,
+      cachedTokens: 0,
+      requestCount: 0,
+    };
+  }
+
+  const data = await res.json();
+  return {
+    totalTokens: data.total_tokens,
+    inputTokens: data.prompt_tokens,
+    outputTokens: data.candidates_tokens,
+    thoughtsTokens: data.thoughts_tokens,
+    cachedTokens: data.cached_tokens,
+    requestCount: data.request_count,
+  };
+}
+
+export async function fetchChatModelInfo(): Promise<ChatModelInfo> {
+  const res = await fetch(`${API_BASE_URL}/chat/model-info`);
+  if (!res.ok) {
+    throw new Error(`Model info API Error: ${res.status} ${res.statusText}`);
+  }
+
+  const data = await res.json();
+  return {
+    modelId: data.model_id,
+    displayName: data.display_name ?? null,
+    inputTokenLimit: data.input_token_limit,
+    outputTokenLimit: data.output_token_limit,
+  };
+}

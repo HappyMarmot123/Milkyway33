@@ -1,17 +1,22 @@
 import { useState } from 'react';
-import { FileText, Pencil, Plus, Trash2 } from 'lucide-react';
+import { FileText, Lock, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { usePromptTemplates } from '@/hooks/usePromptTemplates';
 import type { PromptTemplate } from '@/features/chat/types';
 import { PromptTemplateFormModal } from '@/components/features/PromptTemplateFormModal';
 
+const MAX_TEMPLATES = 8;
+
 export function PromptTemplateSection() {
   const { templates, isLoading, createTemplate, updateTemplate, deleteTemplate } = usePromptTemplates();
   const [mode, setMode] = useState<'create' | 'edit' | null>(null);
   const [editingTemplate, setEditingTemplate] = useState<PromptTemplate | null>(null);
 
+  const isAtLimit = templates.length >= MAX_TEMPLATES;
+
   const openCreate = () => {
+    if (isAtLimit) return;
     setEditingTemplate(null);
     setMode('create');
   };
@@ -41,13 +46,41 @@ export function PromptTemplateSection() {
                 <FileText className="h-5 w-5 text-sky-300" />
               </div>
               <div className="min-w-0">
-                <CardTitle className="text-base sm:text-lg">프롬프트 템플릿</CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-base sm:text-lg">프롬프트 템플릿</CardTitle>
+                  <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${
+                    isAtLimit
+                      ? 'bg-red-500/15 text-red-400 border border-red-500/20'
+                      : 'bg-white/10 text-muted-foreground'
+                  }`}>
+                    {templates.length}/{MAX_TEMPLATES}
+                  </span>
+                </div>
                 <CardDescription className="text-xs sm:text-sm">System prompt와 Few-shot 예시를 저장합니다</CardDescription>
               </div>
             </div>
-            <Button type="button" size="sm" onClick={openCreate} className="gap-2">
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">새 템플릿</span>
+            <Button
+              type="button"
+              size="sm"
+              onClick={openCreate}
+              disabled={isAtLimit}
+              className={`gap-2 shrink-0 transition-all duration-200 ${
+                isAtLimit
+                  ? 'opacity-50 cursor-not-allowed bg-white/5 border border-white/10 text-muted-foreground'
+                  : 'border border-white/10 bg-white/5 text-foreground hover:bg-white/10 hover:border-white/20'
+              }`}
+            >
+              {isAtLimit ? (
+                <>
+                  <Lock className="h-4 w-4" />
+                  <span className="hidden sm:inline">최대 {MAX_TEMPLATES}개</span>
+                </>
+              ) : (
+                <>
+                  <Plus className="h-4 w-4" />
+                  <span className="hidden sm:inline">새 템플릿</span>
+                </>
+              )}
             </Button>
           </div>
         </CardHeader>

@@ -190,9 +190,26 @@ export function PromptTemplateFormModal({ mode, template, onClose, onSubmit }: P
           </div>
 
           <div className="flex justify-end gap-2 border-t border-white/10 bg-bg-200/40 px-5 py-4">
-            <Button type="button" variant="ghost" onClick={onClose}>취소</Button>
-            <Button type="button" onClick={handleSubmit} disabled={hasErrors || isSaving} className="gap-2">
-              <Save size={16} /> 저장
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={onClose}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              취소
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSubmit}
+              disabled={hasErrors || isSaving}
+              className={`gap-2 px-6 transition-all duration-200 ${
+                hasErrors || isSaving
+                  ? 'bg-white/10 text-muted-foreground cursor-not-allowed'
+                  : 'border border-purple-500/30 bg-purple-500/15 text-purple-100 hover:bg-purple-500/25 hover:border-purple-500/40'
+              }`}
+            >
+              <Save size={16} />
+              {isSaving ? '저장 중...' : '저장'}
             </Button>
           </div>
         </div>

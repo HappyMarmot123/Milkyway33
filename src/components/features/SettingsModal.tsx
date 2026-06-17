@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Settings, X } from "lucide-react";
+import { X } from "lucide-react";
 
 interface SettingsModalProps {
   open: boolean;
@@ -28,9 +28,6 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
 
         <div className="flex items-center justify-between gap-4 border-b border-white/10 bg-bg-100/95 px-4 py-3 sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-purple-500/20 bg-purple-500/10">
-              <Settings className="h-4 w-4 text-purple-300" />
-            </div>
             <div className="min-w-0">
               <h2 className="text-base font-semibold text-foreground">설정</h2>
               <p className="truncate text-xs text-muted-foreground">

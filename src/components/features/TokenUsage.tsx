@@ -13,61 +13,45 @@ interface TokenUsageValue {
 
 interface TokenUsageProps {
   usage: TokenUsageValue | null;
-  maxTokens?: number;
+  maxInputTokens?: number;
+  maxOutputTokens?: number;
   modelId?: string;
 }
 
-export function TokenUsage({ usage, maxTokens, modelId }: TokenUsageProps) {
+export function TokenUsage({ usage, maxInputTokens, maxOutputTokens, modelId }: TokenUsageProps) {
   if (!usage) {
     return null;
   }
 
   const usedTokens = usage.totalTokens ?? usage.inputTokens + usage.outputTokens + (usage.thoughtsTokens || 0);
-  const percentage = maxTokens ? (usedTokens / maxTokens) * 100 : 0;
+  const inputPercentage = maxInputTokens ? (usage.inputTokens / maxInputTokens) * 100 : 0;
+  const outputPercentage = maxOutputTokens ? (usage.outputTokens / maxOutputTokens) * 100 : 0;
 
   return (
     <div className="space-y-4">
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-sm">
-          <span>전체 사용량</span>
-          <span className="font-mono">
-            {usedTokens.toLocaleString()} / {maxTokens?.toLocaleString() || "∞"}
-          </span>
-        </div>
-        <Progress value={Math.min(percentage, 100)} />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 text-sm">
-        <div>
-          <div className="text-muted-foreground">Input</div>
-          <div className="font-mono">{usage.inputTokens?.toLocaleString() || 0}</div>
-        </div>
-        <div>
-          <div className="text-muted-foreground">Output</div>
-          <div className="font-mono">{usage.outputTokens?.toLocaleString() || 0}</div>
-        </div>
-        {(usage.thoughtsTokens || 0) > 0 && (
-          <div>
-            <div className="text-muted-foreground">Thinking</div>
-            <div className="font-mono">{usage.thoughtsTokens?.toLocaleString() || 0}</div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-2 rounded-lg border border-white/10 bg-white/[0.03] p-3">
+          <div className="flex items-center justify-between gap-3 text-sm">
+            <span>Input</span>
+            <span className="shrink-0 font-mono text-xs">
+              {usage.inputTokens.toLocaleString()} / {maxInputTokens?.toLocaleString() || "∞"}
+            </span>
           </div>
-        )}
-        {(usage.cachedTokens || 0) > 0 && (
-          <div>
-            <div className="text-muted-foreground">Cached</div>
-            <div className="font-mono">{usage.cachedTokens?.toLocaleString() || 0}</div>
+          <Progress value={Math.min(inputPercentage, 100)} />
+        </div>
+        <div className="space-y-2 rounded-lg border border-white/10 bg-white/[0.03] p-3">
+          <div className="flex items-center justify-between gap-3 text-sm">
+            <span>Output</span>
+            <span className="shrink-0 font-mono text-xs">
+              {usage.outputTokens.toLocaleString()} / {maxOutputTokens?.toLocaleString() || "∞"}
+            </span>
           </div>
-        )}
-        {(usage.requestCount || 0) > 0 && (
-          <div>
-            <div className="text-muted-foreground">Requests</div>
-            <div className="font-mono">{usage.requestCount?.toLocaleString() || 0}</div>
-          </div>
-        )}
+          <Progress value={Math.min(outputPercentage, 100)} />
+        </div>
       </div>
 
       {modelId && (
-        <Context usedTokens={usedTokens} maxTokens={maxTokens || 100000} modelId={modelId}>
+        <Context usedTokens={usedTokens} maxTokens={maxInputTokens || 100000} modelId={modelId}>
           <ContextTrigger />
           <ContextContent>
             <ContextContentHeader />

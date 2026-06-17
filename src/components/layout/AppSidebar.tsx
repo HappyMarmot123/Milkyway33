@@ -250,7 +250,7 @@ export function AppSidebar() {
               href="https://github.com/HappyMarmot123"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 px-3 py-2 mb-1 text-[11px] text-muted-foreground/50 hover:text-muted-foreground/80 transition-colors duration-200"
+              className="flex items-center gap-2 px-3 py-2 mb-1 text-xs text-muted-foreground/50 hover:text-muted-foreground/80 transition-colors duration-200"
             >
               <Github className="h-3.5 w-3.5 shrink-0" />
               <span>Made by @HappyMarmot123</span>

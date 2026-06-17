@@ -4,6 +4,7 @@ from typing import AsyncIterator, Optional
 import json
 import asyncio
 from app.core.config import settings
+from app.services.token_usage import token_usage_service
 
 def serialize_usage_metadata(usage_metadata) -> Optional[dict]:
     if not usage_metadata:
@@ -22,6 +23,19 @@ class GeminiService:
     def __init__(self):
         self.client = genai.Client(api_key=settings.GOOGLE_API_KEY)
         self.model_name = settings.GEMINI_MODEL_NAME
+        self._model_info: dict | None = None
+
+    async def get_model_info(self) -> dict:
+        """Return current Gemini model metadata from the Gemini API."""
+        if self._model_info is None:
+            model = await self.client.aio.models.get(model=self.model_name)
+            self._model_info = {
+                "model_id": self.model_name,
+                "display_name": model.display_name,
+                "input_token_limit": model.input_token_limit or 0,
+                "output_token_limit": model.output_token_limit or 0,
+            }
+        return self._model_info
 
     async def generate_response_stream(
         self, 
@@ -131,6 +145,13 @@ class GeminiService:
                 if chunk.usage_metadata:
                     usage_metadata = serialize_usage_metadata(chunk.usage_metadata)
             
+            # 공유 토큰 사용량 Redis 누산 (실패해도 스트리밍에 영향 없음)
+            if usage_metadata:
+                try:
+                    await token_usage_service.accumulate(usage_metadata)
+                except Exception:
+                    pass
+
             # Emit the final "complete" event with ALL collected data
             yield json.dumps({
                 "status": "complete",

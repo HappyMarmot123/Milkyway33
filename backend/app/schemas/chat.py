@@ -34,3 +34,19 @@ class ChatResponse(BaseModel):
     finish_reason: Optional[str] = None
     safety_ratings: Optional[List[Any]] = None
     usage_metadata: Optional[UsageMetadata] = None
+
+
+class SharedTokenUsageResponse(BaseModel):
+    total_tokens: int
+    prompt_tokens: int
+    candidates_tokens: int
+    thoughts_tokens: int
+    cached_tokens: int
+    request_count: int
+
+
+class ModelInfoResponse(BaseModel):
+    model_id: str
+    display_name: Optional[str] = None
+    input_token_limit: int
+    output_token_limit: int
