@@ -49,7 +49,7 @@ const ChatBot = memo(() => {
         <Conversation className="flex-1 min-h-0 overflow-hidden">
           <ConversationContent className="h-full align-middle pb-56">
             {!hasMessages && status === "idle" && (
-              <div className="flex flex-col items-center justify-center h-full text-center space-y-8 animate-in fade-in zoom-in-95 duration-500">
+              <div className="flex flex-col items-center justify-center h-full text-center space-y-8 animate-in fade-in zoom-in-95 duration-500 select-none">
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-gradient-to-tr from-orange-500/10 via-amber-500/5 to-transparent rounded-full blur-[100px] pointer-events-none" />
 
                 <div className="relative group cursor-default">
