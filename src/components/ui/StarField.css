@@ -1,0 +1,46 @@
+.starfield {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.starfield__star {
+  position: absolute;
+  top: -5%;
+  left: var(--star-left);
+  width: var(--star-size);
+  height: var(--star-size);
+  border-radius: 9999px;
+  background: radial-gradient(circle, var(--star-color) 0%, transparent 70%);
+  opacity: 0;
+  /* Only transform & opacity are animated, so the browser can composite each
+     star on the GPU without triggering layout or paint. */
+  will-change: transform, opacity;
+  animation: starfield-fall var(--star-duration) linear var(--star-delay) infinite;
+}
+
+@keyframes starfield-fall {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0;
+  }
+  12% {
+    opacity: var(--star-opacity);
+  }
+  88% {
+    opacity: var(--star-opacity);
+  }
+  100% {
+    transform: translate3d(var(--star-drift), 110vh, 0);
+    opacity: 0;
+  }
+}
+
+/* Respect users who prefer reduced motion: no falling animation at all. */
+@media (prefers-reduced-motion: reduce) {
+  .starfield {
+    display: none;
+  }
+}
