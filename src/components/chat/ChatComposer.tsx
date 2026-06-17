@@ -210,8 +210,7 @@ const ComposerTools = memo(({ onOpenConfig }: ComposerToolsProps) => {
   const { clearMessages } = useChatActions();
   const { promptConfig } = useChatConfig();
 
-  const hasPromptConfig =
-    Boolean(promptConfig.systemInstruction) || (promptConfig.examples?.length || 0) > 0;
+  const hasPromptConfig = Boolean(promptConfig.systemInstruction);
 
   return (
     <PromptInputTools className="gap-1">

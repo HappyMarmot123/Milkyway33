@@ -37,7 +37,6 @@ async def chat_stream(request: ChatRequest, http_request: Request):
         gemini_service.generate_response_stream(
             message=safe_message,
             system_instruction=request.system_instruction,
-            few_shot_examples=request.few_shot_examples,
             history=[m.model_dump() for m in request.history] if request.history else None,
         ),
         media_type="text/event-stream",

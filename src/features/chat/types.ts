@@ -22,14 +22,8 @@ export interface Conversation {
   updatedAt: Date;
 }
 
-export interface ChatMessageExample {
-  input: string;
-  output: string;
-}
-
 export interface ChatPromptConfig {
   systemInstruction?: string;
-  examples?: ChatMessageExample[];
 }
 
 export interface PromptTemplate {
@@ -37,7 +31,6 @@ export interface PromptTemplate {
   name: string;
   description: string;
   systemInstruction: string;
-  examples: ChatMessageExample[];
   createdAt: Date;
   updatedAt: Date;
 }

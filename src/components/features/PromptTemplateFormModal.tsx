@@ -1,20 +1,16 @@
 import { useMemo, useState } from 'react';
-import { HelpCircle, Plus, Save, Trash2, X } from 'lucide-react';
+import { HelpCircle, Save, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import type { ChatMessageExample, PromptTemplate } from '@/features/chat/types';
+import type { PromptTemplate } from '@/features/chat/types';
 import { PRESET_CATEGORIES, PROMPT_PRESETS, type PromptPreset, type PromptPresetCategory } from '@/features/promptTemplates/presets';
-import { checkPromptText, getExampleErrors, normalizeExamples, PROMPT_EXAMPLE_LIMIT, PROMPT_EXAMPLE_MAX, PROMPT_SYSTEM_LIMIT } from '@/features/promptTemplates/validation';
+import { checkPromptText, PROMPT_SYSTEM_LIMIT } from '@/features/promptTemplates/validation';
 
 interface PromptTemplateFormModalProps {
   mode: 'create' | 'edit';
   template?: PromptTemplate | null;
   onClose: () => void;
-  onSubmit: (input: { name: string; description: string; systemInstruction: string; examples: ChatMessageExample[] }) => Promise<void>;
-}
-
-function emptyExample(): ChatMessageExample {
-  return { input: '', output: '' };
+  onSubmit: (input: { name: string; description: string; systemInstruction: string }) => Promise<void>;
 }
 
 function FieldLabel({ label, tooltip, required, counter }: { label: string; tooltip: string; required?: boolean; counter?: string }) {
@@ -42,7 +38,6 @@ export function PromptTemplateFormModal({ mode, template, onClose, onSubmit }: P
   const [name, setName] = useState(template?.name ?? '');
   const [description, setDescription] = useState(template?.description ?? '');
   const [systemInstruction, setSystemInstruction] = useState(template?.systemInstruction ?? '');
-  const [examples, setExamples] = useState<ChatMessageExample[]>(template?.examples?.length ? template.examples : [emptyExample()]);
   const [category, setCategory] = useState<PromptPresetCategory>('개발');
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -50,28 +45,13 @@ export function PromptTemplateFormModal({ mode, template, onClose, onSubmit }: P
   const categoryPresets = useMemo(() => PROMPT_PRESETS.filter((preset) => preset.category === category), [category]);
   const systemError = systemInstruction.trim() ? checkPromptText(systemInstruction, PROMPT_SYSTEM_LIMIT) : 'System Instruction을 입력하세요.';
   const nameError = name.trim().length < 2 ? '이름은 2자 이상 입력하세요.' : name.trim().length > 30 ? '이름은 30자 이내로 입력하세요.' : null;
-  const exampleErrors = examples.map(getExampleErrors);
-  const hasExampleErrors = exampleErrors.some((error) => error.input || error.output);
-  const hasErrors = Boolean(nameError || systemError || hasExampleErrors);
+  const hasErrors = Boolean(nameError || systemError);
 
   const handlePresetSelect = (preset: PromptPreset) => {
     setName(preset.name);
     setDescription(preset.description);
     setSystemInstruction(preset.systemInstruction);
-    setExamples(preset.examples.length ? preset.examples.map((example) => ({ ...example })) : [emptyExample()]);
     setSelectedPresetId(preset.id);
-  };
-
-  const updateExample = (index: number, field: keyof ChatMessageExample, value: string) => {
-    setExamples((current) => current.map((example, itemIndex) => itemIndex === index ? { ...example, [field]: value } : example));
-  };
-
-  const addExample = () => {
-    setExamples((current) => current.length >= PROMPT_EXAMPLE_MAX ? current : [...current, emptyExample()]);
-  };
-
-  const removeExample = (index: number) => {
-    setExamples((current) => current.length <= 1 ? [emptyExample()] : current.filter((_, itemIndex) => itemIndex !== index));
   };
 
   const handleSubmit = async () => {
@@ -82,7 +62,6 @@ export function PromptTemplateFormModal({ mode, template, onClose, onSubmit }: P
       name: name.trim(),
       description: description.trim(),
       systemInstruction: systemInstruction.trim(),
-      examples: normalizeExamples(examples),
     });
     setIsSaving(false);
     onClose();
@@ -95,7 +74,7 @@ export function PromptTemplateFormModal({ mode, template, onClose, onSubmit }: P
           <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
             <div>
               <h2 className="text-lg font-semibold">{mode === 'create' ? '새 프롬프트 템플릿' : '프롬프트 템플릿 편집'}</h2>
-              <p className="text-xs text-muted-foreground">System Instruction과 Few-shot 예시를 저장합니다</p>
+              <p className="text-xs text-muted-foreground">System Instruction을 저장합니다</p>
             </div>
             <button type="button" onClick={onClose} className="rounded-full p-2 text-muted-foreground hover:bg-white/10 hover:text-foreground" aria-label="닫기">
               <X size={18} />
@@ -153,38 +132,6 @@ export function PromptTemplateFormModal({ mode, template, onClose, onSubmit }: P
                 <FieldLabel label="System Instruction" required tooltip="AI가 대화 전반에 걸쳐 따를 역할과 규칙을 정의합니다." counter={`${systemInstruction.length}/${PROMPT_SYSTEM_LIMIT}`} />
                 <textarea value={systemInstruction} onChange={(event) => setSystemInstruction(event.target.value)} maxLength={PROMPT_SYSTEM_LIMIT} className={`flex min-h-32 w-full resize-y rounded-md border bg-transparent p-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${systemError ? 'border-red-500' : 'border-input'}`} placeholder="너는 React/TypeScript 전문 프론트엔드 개발자야..." />
                 {systemError && <p className="text-xs text-red-400">{systemError}</p>}
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between gap-3">
-                  <FieldLabel label="Few-shot 예시" tooltip="입력/출력 쌍으로 구성하며, 더 일관된 응답을 유도합니다. 최대 2개까지 추가할 수 있습니다." counter={`${examples.length}/${PROMPT_EXAMPLE_MAX}`} />
-                  <Button type="button" variant="outline" size="sm" onClick={addExample} disabled={examples.length >= PROMPT_EXAMPLE_MAX} className="gap-2 border-white/10 bg-white/5">
-                    <Plus size={14} /> 추가
-                  </Button>
-                </div>
-
-                {examples.map((example, index) => (
-                  <div key={index} className="space-y-3 rounded-lg border border-white/10 bg-bg-200/40 p-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-muted-foreground">예시 {index + 1}</span>
-                      <button type="button" onClick={() => removeExample(index)} className="rounded-md p-1.5 text-muted-foreground hover:bg-red-500/10 hover:text-red-300" aria-label="예시 삭제">
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div className="space-y-1.5">
-                        <div className="flex justify-between text-xs text-muted-foreground"><span>User 입력</span><span>{example.input.length}/{PROMPT_EXAMPLE_LIMIT}</span></div>
-                        <textarea value={example.input} onChange={(event) => updateExample(index, 'input', event.target.value)} maxLength={PROMPT_EXAMPLE_LIMIT} className={`flex min-h-24 w-full resize-y rounded-md border bg-transparent p-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${exampleErrors[index]?.input ? 'border-red-500' : 'border-input'}`} />
-                        {exampleErrors[index]?.input && <p className="text-xs text-red-400">{exampleErrors[index].input}</p>}
-                      </div>
-                      <div className="space-y-1.5">
-                        <div className="flex justify-between text-xs text-muted-foreground"><span>AI 응답</span><span>{example.output.length}/{PROMPT_EXAMPLE_LIMIT}</span></div>
-                        <textarea value={example.output} onChange={(event) => updateExample(index, 'output', event.target.value)} maxLength={PROMPT_EXAMPLE_LIMIT} className={`flex min-h-24 w-full resize-y rounded-md border bg-transparent p-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${exampleErrors[index]?.output ? 'border-red-500' : 'border-input'}`} />
-                        {exampleErrors[index]?.output && <p className="text-xs text-red-400">{exampleErrors[index].output}</p>}
-                      </div>
-                    </div>
-                  </div>
-                ))}
               </div>
             </section>
           </div>

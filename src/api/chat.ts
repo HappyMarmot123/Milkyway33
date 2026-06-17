@@ -109,16 +109,8 @@ export async function* streamChat(
 ): AsyncGenerator<ChatEvent> {
   const body: any = { message };
   
-  if (config) {
-    if (config.systemInstruction) {
-      body.system_instruction = config.systemInstruction;
-    }
-    if (config.examples && config.examples.length > 0) {
-      body.few_shot_examples = config.examples.map(ex => ({
-        input: ex.input,
-        output: ex.output
-      }));
-    }
+  if (config?.systemInstruction) {
+    body.system_instruction = config.systemInstruction;
   }
 
   if (history && history.length > 0) {

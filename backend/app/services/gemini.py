@@ -41,7 +41,6 @@ class GeminiService:
         self, 
         message: str, 
         system_instruction: str = None,
-        few_shot_examples: list[dict] = None,
         history: list[dict] = None,
     ) -> AsyncIterator[str]:
         """
@@ -56,26 +55,8 @@ class GeminiService:
             if system_instruction:
                 config_params['system_instruction'] = system_instruction
                 
-            # Construct content with few-shot examples if present
+            # Construct content with history before the current message
             request_contents = []
-            
-            if few_shot_examples:
-                for example in few_shot_examples:
-                    # Creating a turn for each example
-                    if 'input' in example:
-                        request_contents.append(
-                            genai.types.Content(
-                                role="user",
-                                parts=[genai.types.Part.from_text(text=example['input'])]
-                            )
-                        )
-                    if 'output' in example:
-                        request_contents.append(
-                            genai.types.Content(
-                                role="model",
-                                parts=[genai.types.Part.from_text(text=example['output'])]
-                            )
-                        )
 
             if history:
                 for turn in history:

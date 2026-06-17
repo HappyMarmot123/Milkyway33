@@ -1,8 +1,4 @@
-import type { ChatMessageExample } from '@/features/chat/types';
-
 export const PROMPT_SYSTEM_LIMIT = 1000;
-export const PROMPT_EXAMPLE_LIMIT = 100;
-export const PROMPT_EXAMPLE_MAX = 2;
 
 const DENY_PATTERNS = [
   /ignore previous instructions/i,
@@ -25,9 +21,7 @@ const DENY_PATTERNS = [
   /\$\(/,
 ];
 
-export type ExampleErrors = { input?: string; output?: string };
-
-export function checkPromptText(text: string, maxLength = PROMPT_EXAMPLE_LIMIT): string | null {
+export function checkPromptText(text: string, maxLength = PROMPT_SYSTEM_LIMIT): string | null {
   if (text.length > maxLength) return `${maxLength}자 이내로 입력하세요.`;
 
   for (const pattern of DENY_PATTERNS) {
@@ -37,20 +31,4 @@ export function checkPromptText(text: string, maxLength = PROMPT_EXAMPLE_LIMIT):
   }
 
   return null;
-}
-
-export function normalizeExamples(examples: ChatMessageExample[]): ChatMessageExample[] {
-  return examples
-    .map((example) => ({ input: example.input.trim(), output: example.output.trim() }))
-    .filter((example) => example.input || example.output)
-    .slice(0, PROMPT_EXAMPLE_MAX);
-}
-
-export function getExampleErrors(example: ChatMessageExample): ExampleErrors {
-  const input = checkPromptText(example.input, PROMPT_EXAMPLE_LIMIT);
-  const output = checkPromptText(example.output, PROMPT_EXAMPLE_LIMIT);
-  return {
-    ...(input ? { input } : {}),
-    ...(output ? { output } : {}),
-  };
 }

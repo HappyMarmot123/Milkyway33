@@ -1,16 +1,9 @@
 import { useMemo, useState } from "react";
-import { Bot, ChevronDown, MessageSquareQuote, Plus, Save, Settings2, Trash2, X } from "lucide-react";
+import { ChevronDown, Save, Settings2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ChatPromptConfig, ChatMessageExample } from "@/features/chat/types";
+import { ChatPromptConfig } from "@/features/chat/types";
 import { usePromptTemplates } from "@/hooks/usePromptTemplates";
-import {
-  checkPromptText,
-  getExampleErrors,
-  normalizeExamples,
-  PROMPT_EXAMPLE_LIMIT,
-  PROMPT_EXAMPLE_MAX,
-  PROMPT_SYSTEM_LIMIT,
-} from "@/features/promptTemplates/validation";
+import { checkPromptText, PROMPT_SYSTEM_LIMIT } from "@/features/promptTemplates/validation";
 
 interface PromptConfigModalProps {
   isOpen: boolean;
@@ -19,23 +12,15 @@ interface PromptConfigModalProps {
   onSave: (config: ChatPromptConfig) => void;
 }
 
-function emptyExample(): ChatMessageExample {
-  return { input: "", output: "" };
-}
-
 type PromptErrors = {
   system?: string;
-  examples: Array<{ input?: string; output?: string }>;
 };
 
-function getPromptErrors(systemInstruction: string, examples: ChatMessageExample[]): PromptErrors {
+function getPromptErrors(systemInstruction: string): PromptErrors {
   const system = systemInstruction
     ? checkPromptText(systemInstruction, PROMPT_SYSTEM_LIMIT) ?? undefined
     : undefined;
-  return {
-    ...(system ? { system } : {}),
-    examples: examples.map(getExampleErrors),
-  };
+  return { ...(system ? { system } : {}) };
 }
 
 export const PromptConfigModal = ({ isOpen, onClose, config, onSave }: PromptConfigModalProps) => {
@@ -58,62 +43,34 @@ function PromptConfigForm({
 }: Pick<PromptConfigModalProps, "config" | "onClose" | "onSave">) {
   const { templates, isLoading } = usePromptTemplates();
   const [systemInstruction, setSystemInstruction] = useState(config.systemInstruction || "");
-  const [examples, setExamples] = useState<ChatMessageExample[]>(
-    config.examples?.length ? config.examples : [emptyExample()],
-  );
 
   const errors = useMemo(
-    () => getPromptErrors(systemInstruction, examples),
-    [systemInstruction, examples],
+    () => getPromptErrors(systemInstruction),
+    [systemInstruction],
   );
-  const hasErrors = Boolean(
-    errors.system || errors.examples.some((e) => e.input || e.output),
-  );
+  const hasErrors = Boolean(errors.system);
 
   const handleTemplateSelect = (templateId: string) => {
     const template = templates.find((t) => t.id === templateId);
     if (!template) return;
     setSystemInstruction(template.systemInstruction);
-    setExamples(
-      template.examples.length
-        ? template.examples.map((e) => ({ ...e }))
-        : [emptyExample()],
-    );
   };
 
   const handleSave = () => {
     if (hasErrors) return;
-    onSave({ systemInstruction, examples: normalizeExamples(examples) });
+    onSave({ systemInstruction });
     onClose();
-  };
-
-  const updateExample = (index: number, field: keyof ChatMessageExample, value: string) => {
-    setExamples((cur) =>
-      cur.map((ex, i) => (i === index ? { ...ex, [field]: value } : ex)),
-    );
-  };
-
-  const addExample = () => {
-    setExamples((cur) => (cur.length >= PROMPT_EXAMPLE_MAX ? cur : [...cur, emptyExample()]));
-  };
-
-  const removeExample = (index: number) => {
-    setExamples((cur) =>
-      cur.length <= 1 ? [emptyExample()] : cur.filter((_, i) => i !== index),
-    );
   };
 
   const systemPct = Math.min((systemInstruction.length / PROMPT_SYSTEM_LIMIT) * 100, 100);
 
   return (
-    /* ── Backdrop ── */
     <div
       className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6
                  bg-black/60 backdrop-blur-md
                  animate-in fade-in duration-200"
       onClick={onClose}
     >
-      {/* ── Panel ── */}
       <div
         className="relative flex w-full max-w-3xl flex-col overflow-hidden
                    rounded-2xl border border-white/10
@@ -123,8 +80,6 @@ function PromptConfigForm({
                    max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
-
-        {/* ── Header ── */}
         <div className="relative flex items-center justify-between border-b border-white/8 px-7 py-5">
           <div className="flex items-center gap-3.5">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl
@@ -150,13 +105,9 @@ function PromptConfigForm({
           </button>
         </div>
 
-        {/* ── Body ── */}
         <div className="flex-1 overflow-y-auto px-7 py-6 space-y-6
                         scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10">
-
-          {/* Template Selector */}
-          <div className="rounded-xl border  p-4
-                          transition-colors border-white/12 bg-white/[0.05]">
+          <div className="rounded-xl border p-4 transition-colors border-white/12 bg-white/[0.05]">
             <div className="flex items-center gap-2 mb-3">
               <span className="text-sm font-medium">템플릿에서 불러오기</span>
             </div>
@@ -193,7 +144,6 @@ function PromptConfigForm({
             </p>
           </div>
 
-          {/* System Instruction */}
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
@@ -225,7 +175,6 @@ function PromptConfigForm({
                           }`}
             />
 
-            {/* progress bar */}
             <div className="h-0.5 w-full overflow-hidden rounded-full bg-white/5">
               <div
                 className={`h-full rounded-full transition-all duration-300 ${
@@ -239,140 +188,8 @@ function PromptConfigForm({
               />
             </div>
           </div>
-
-          {/* Divider */}
-          <div className="relative flex items-center gap-4">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-          </div>
-
-          {/* Few-shot Examples */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <div>
-                  <span className="text-sm font-medium">Few-shot</span>
-                  <span className="ml-2 text-[11px] text-muted-foreground/50">
-                    {examples.filter((e) => e.input || e.output).length} / {PROMPT_EXAMPLE_MAX}
-                  </span>
-                </div>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addExample}
-                disabled={examples.length >= PROMPT_EXAMPLE_MAX}
-                className="h-8 gap-1.5 border-white/10 bg-white/5 text-xs
-                           hover:bg-white/10 hover:border-white/20
-                           disabled:opacity-30 transition-all duration-150"
-              >
-                <Plus size={13} />
-                예시 추가
-              </Button>
-            </div>
-
-            <div className="space-y-3">
-              {examples.map((example, index) => (
-                <div
-                  key={index}
-                  className="group rounded-xl border
-                             overflow-hidden transition-all duration-200
-                             border-white/12 bg-white/[0.05]"
-                >
-                  {/* Example header */}
-                  <div className="flex items-center justify-between border-b border-white/6 px-4 py-2.5">
-                    <div className="flex items-center gap-2">
-                      <span className="flex h-5 w-5 items-center justify-center rounded-md
-                                       bg-emerald-500/15 text-[10px] font-semibold text-emerald-400">
-                        {index + 1}
-                      </span>
-                      <span className="text-xs font-medium text-muted-foreground/70">
-                        예시 쌍
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => removeExample(index)}
-                      aria-label="예시 삭제"
-                      className="flex h-6 w-6 items-center justify-center rounded-md
-                                 text-muted-foreground/40
-                                 hover:bg-red-500/12 hover:text-red-400
-                                 opacity-0 group-hover:opacity-100
-                                 transition-all duration-150"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-
-                  {/* Input / Output */}
-                  <div className="grid sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-white/6">
-                    {/* User Input */}
-                    <div className="p-4 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-medium uppercase tracking-wider text-blue-400/70">
-                          User
-                        </span>
-                        {errors.examples[index]?.input ? (
-                          <span className="text-[10px] text-red-400">{errors.examples[index].input}</span>
-                        ) : (
-                          <span className="text-[10px] tabular-nums text-muted-foreground/40">
-                            {example.input.length}/{PROMPT_EXAMPLE_LIMIT}
-                          </span>
-                        )}
-                      </div>
-                      <textarea
-                        value={example.input}
-                        onChange={(e) => updateExample(index, "input", e.target.value)}
-                        maxLength={PROMPT_EXAMPLE_LIMIT}
-                        placeholder="사용자 질문이나 입력…"
-                        className={`w-full min-h-[96px] resize-y rounded-lg border px-3 py-2.5 text-sm
-                                    bg-bg-100/30 placeholder:text-muted-foreground/30
-                                    focus:outline-none focus:ring-1
-                                    transition-all duration-150
-                                    ${errors.examples[index]?.input
-                                      ? "border-red-500/40 focus:ring-red-500/30"
-                                      : "border-white/8 focus:ring-blue-500/30 focus:border-blue-500/25 hover:border-white/14"
-                                    }`}
-                      />
-                    </div>
-
-                    {/* Model Response */}
-                    <div className="p-4 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-medium uppercase tracking-wider text-emerald-400/70">
-                          Assistant
-                        </span>
-                        {errors.examples[index]?.output ? (
-                          <span className="text-[10px] text-red-400">{errors.examples[index].output}</span>
-                        ) : (
-                          <span className="text-[10px] tabular-nums text-muted-foreground/40">
-                            {example.output.length}/{PROMPT_EXAMPLE_LIMIT}
-                          </span>
-                        )}
-                      </div>
-                      <textarea
-                        value={example.output}
-                        onChange={(e) => updateExample(index, "output", e.target.value)}
-                        maxLength={PROMPT_EXAMPLE_LIMIT}
-                        placeholder="모델이 응답해야 할 내용…"
-                        className={`w-full min-h-[96px] resize-y rounded-lg border px-3 py-2.5 text-sm
-                                    bg-bg-100/30 placeholder:text-muted-foreground/30
-                                    focus:outline-none focus:ring-1
-                                    transition-all duration-150
-                                    ${errors.examples[index]?.output
-                                      ? "border-red-500/40 focus:ring-red-500/30"
-                                      : "border-white/8 focus:ring-emerald-500/30 focus:border-emerald-500/25 hover:border-white/14"
-                                    }`}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
 
-        {/* ── Footer ── */}
         <div className="relative flex items-center justify-between gap-3
                         border-t border-white/8 bg-white/[0.015] px-7 py-4">
           <p className="text-[11px] text-muted-foreground/40">

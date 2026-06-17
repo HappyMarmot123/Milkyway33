@@ -32,7 +32,6 @@ export function usePromptTemplates() {
 
     chatActions?.setPromptConfig({
       systemInstruction: template.systemInstruction,
-      examples: template.examples,
     });
   }, [chatActions, templates]);
 

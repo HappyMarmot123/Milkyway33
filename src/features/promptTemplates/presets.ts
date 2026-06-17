@@ -1,5 +1,3 @@
-import type { ChatMessageExample } from '@/features/chat/types';
-
 export type PromptPresetCategory = '개발' | '리서치' | '창작' | '업무';
 
 export interface PromptPreset {
@@ -9,7 +7,6 @@ export interface PromptPreset {
   name: string;
   description: string;
   systemInstruction: string;
-  examples: ChatMessageExample[];
 }
 
 export const PRESET_CATEGORIES: PromptPresetCategory[] = ['개발', '리서치', '창작', '업무'];
@@ -32,12 +29,6 @@ export const PROMPT_PRESETS: PromptPreset[] = [
       '## 금지 사항\n' +
       '- 이미 물어본 내용을 반복해서 설명하지 않습니다.\n' +
       '- "물론이죠", "좋은 질문이에요" 같은 불필요한 도입부를 사용하지 않습니다.',
-    examples: [
-      {
-        input: '프롬프트 엔지니어링이 뭐야?',
-        output: 'AI에게 원하는 결과를 얻도록 질문을 설계하는 기술. 역할·목적·형식을 명시할수록 품질이 높아집니다.',
-      },
-    ],
   },
 
   // ── 리서치 ────────────────────────────────────────────────────────────
@@ -59,7 +50,6 @@ export const PROMPT_PRESETS: PromptPreset[] = [
       '## 스타일 규칙\n' +
       '- 전문 용어는 처음 등장 시 괄호 안에 쉬운 설명을 추가합니다.\n' +
       '- 전체 길이는 400자 이내를 목표로 합니다.',
-    examples: [],
   },
 
   // ── 창작 ──────────────────────────────────────────────────────────────
@@ -81,7 +71,6 @@ export const PROMPT_PRESETS: PromptPreset[] = [
       '- 요청당 3가지 버전(직접적/감성적/호기심 유발)을 제안합니다.\n' +
       '- 각 버전에 "왜 효과적인가" 한 줄 설명을 붙입니다.\n' +
       '- 타겟 오디언스, 채널(SNS/이메일/광고)을 모른다면 먼저 물어봅니다.',
-    examples: [],
   },
   {
     id: 'preset_translator',
@@ -99,12 +88,6 @@ export const PROMPT_PRESETS: PromptPreset[] = [
       '## 출력 형식\n' +
       '번역문\n' +
       '*(번역 메모: 특수 표현·관용구 처리 방식, 이유)*  ← 필요한 경우만.',
-    examples: [
-      {
-        input: "'눈치가 빠르다'를 영어로 번역해줘.",
-        output: 'She reads the room well.\n*(눈치: 상황 파악 능력, 영어 직접 대응 어휘 없어 관용구 사용)',
-      },
-    ],
   },
 
   // ── 업무 ──────────────────────────────────────────────────────────────
@@ -128,6 +111,5 @@ export const PROMPT_PRESETS: PromptPreset[] = [
       '- 의사결정에 필요한 숫자와 날짜는 반드시 포함합니다.\n\n' +
       '## 공통 규칙\n' +
       '정보가 부족하면 작업 전에 한 번만 확인 질문을 합니다.',
-    examples: [],
   },
 ];

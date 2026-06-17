@@ -1,5 +1,5 @@
 import { dexieInit } from '@/lib/db';
-import type { ChatMessageExample, PromptTemplate } from '@/features/chat/types';
+import type { PromptTemplate } from '@/features/chat/types';
 import { PROMPT_PRESETS } from '@/features/promptTemplates/presets';
 
 function generateId(): string {
@@ -10,7 +10,6 @@ export interface PromptTemplateInput {
   name: string;
   description: string;
   systemInstruction: string;
-  examples: ChatMessageExample[];
 }
 
 export const promptTemplateRepository = {
@@ -32,7 +31,6 @@ export const promptTemplateRepository = {
       name: input.name.trim(),
       description: input.description.trim(),
       systemInstruction: input.systemInstruction.trim(),
-      examples: input.examples,
       createdAt: now,
       updatedAt: now,
     };
@@ -76,7 +74,6 @@ export const promptTemplateRepository = {
         name: preset.name,
         description: preset.description,
         systemInstruction: preset.systemInstruction,
-        examples: preset.examples,
         createdAt: new Date(now.getTime() - (PROMPT_PRESETS.length - index) * 1000),
         updatedAt: new Date(now.getTime() - (PROMPT_PRESETS.length - index) * 1000),
       }))

@@ -56,7 +56,7 @@ export function PromptTemplateSection() {
                     {templates.length}/{MAX_TEMPLATES}
                   </span>
                 </div>
-                <CardDescription className="text-xs sm:text-sm">System prompt와 Few-shot 예시를 저장합니다</CardDescription>
+                <CardDescription className="text-xs sm:text-sm">System prompt를 저장합니다</CardDescription>
               </div>
             </div>
             <Button
@@ -98,7 +98,6 @@ export function PromptTemplateSection() {
                   <div className="min-w-0">
                     <div className="truncate text-sm font-medium">{template.name}</div>
                     <div className="mt-0.5 truncate text-xs text-muted-foreground">{template.description || '설명 없음'}</div>
-                    <div className="mt-1 text-[11px] text-muted-foreground/70">예시 {template.examples.length}개</div>
                   </div>
                   <div className="flex shrink-0 items-center gap-1">
                     <Button type="button" variant="ghost" size="icon" onClick={() => openEdit(template)} aria-label="편집" className="h-8 w-8">

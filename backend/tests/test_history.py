@@ -3,11 +3,10 @@
 
 검증 항목:
 1. 히스토리가 request_contents에 올바른 순서로 삽입되는지
-2. few-shot 뒤, 현재 메시지 앞에 위치하는지
-3. 히스토리 없을 때와 있을 때 request_contents 길이 차이
-4. role 변환: "user"/"model" 정확히 매핑되는지
-5. 빈 히스토리 전달 시 정상 동작하는지
-6. /chat/summarize 엔드포인트 동작 검증
+2. 히스토리 없을 때와 있을 때 request_contents 길이 차이
+3. role 변환: "user"/"model" 정확히 매핑되는지
+4. 빈 히스토리 전달 시 정상 동작하는지
+5. /chat/summarize 엔드포인트 동작 검증
 """
 
 import pytest
@@ -100,29 +99,6 @@ class TestGeminiServiceHistory:
         assert contents[1].parts[0].text == "이전 응답"
         assert contents[2].role == "user"
         assert contents[2].parts[0].text == "현재 질문"
-
-    @pytest.mark.anyio
-    async def test_few_shot_뒤에_히스토리_삽입됨(self, service):
-        mock_stream, captured = _capture_contents()
-        service.client.aio.models.generate_content_stream = mock_stream
-
-        few_shot = [{"input": "예시질문", "output": "예시답"}]
-        history = _history(("실제 이전 질문", "실제 이전 응답"))
-
-        async for _ in service.generate_response_stream(
-            "현재 질문",
-            few_shot_examples=few_shot,
-            history=history,
-        ):
-            pass
-
-        contents = captured["contents"]
-        assert len(contents) == 5
-        assert contents[0].parts[0].text == "예시질문"
-        assert contents[1].parts[0].text == "예시답"
-        assert contents[2].parts[0].text == "실제 이전 질문"
-        assert contents[3].parts[0].text == "실제 이전 응답"
-        assert contents[4].parts[0].text == "현재 질문"
 
     @pytest.mark.anyio
     async def test_role_변환_user_model_정확히_매핑(self, service):

@@ -11,7 +11,6 @@ class ChatHistoryMessage(BaseModel):
 class ChatRequest(BaseModel):
     message: str
     system_instruction: Optional[str] = None
-    few_shot_examples: Optional[List[dict[str, str]]] = None
     history: List[ChatHistoryMessage] = []
 
 
