@@ -5,11 +5,12 @@ import logging
 from fastapi import HTTPException, Request, status
 from upstash_ratelimit import FixedWindow, Ratelimit
 from upstash_redis import Redis
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
 DAILY_LIMIT = 13
-CHAT_COOLDOWN_SECONDS = 10
+CHAT_COOLDOWN_SECONDS = settings.CHAT_COOLDOWN_SECONDS
 
 redis = None
 cooldown_limiter = None

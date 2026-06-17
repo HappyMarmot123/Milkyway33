@@ -164,6 +164,16 @@ class GeminiService:
             }) + "\n"
 
         except Exception as e:
-            yield json.dumps({"status": "error", "message": str(e)}) + "\n"
+            error_msg = str(e)
+            
+            # Translate known Gemini errors to Korean
+            if "503" in error_msg or "UNAVAILABLE" in error_msg or "high demand" in error_msg:
+                error_msg = "현재 AI 서비스(Gemini) 사용량이 매우 많아 일시적으로 서비스를 이용할 수 없습니다. 잠시 후 다시 시도해 주세요."
+            elif "429" in error_msg or "quota" in error_msg.lower() or "RESOURCE_EXHAUSTED" in error_msg:
+                error_msg = "AI 호출 한도(Quota)를 초과했습니다. 잠시 후 다시 시도해 주세요."
+            elif "API_KEY_INVALID" in error_msg or "API key not valid" in error_msg or ("400" in error_msg and "API key" in error_msg):
+                error_msg = "설정된 Gemini API 키가 유효하지 않습니다. Vercel 환경 변수 설정을 확인해 주세요."
+                
+            yield json.dumps({"status": "error", "message": error_msg}) + "\n"
 
 gemini_service = GeminiService()
