@@ -26,12 +26,14 @@ import {
   Pencil,
   Trash2,
   Github,
+  Bookmark,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useChatActions, useChatConversations } from "@/contexts/ChatContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SettingsModal } from "@/components/features/SettingsModal";
+import { LikedMessagesPanel } from "@/components/features/LikedMessagesPanel";
 
 export function AppSidebar() {
   const location = useLocation();
@@ -47,6 +49,7 @@ export function AppSidebar() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isLikedOpen, setIsLikedOpen] = useState(false);
 
   // Get recent conversations (up to 5 for sidebar display)
   const recentConversations = useMemo(() => conversations.slice(0, 5), [conversations]);
@@ -257,6 +260,16 @@ export function AppSidebar() {
               <SidebarMenuItem>
                 <SidebarMenuButton
                   type="button"
+                  onClick={() => setIsLikedOpen(true)}
+                  className="flex w-full items-center gap-3 h-10 px-3 rounded-xl transition-all duration-200 !bg-transparent hover:!bg-white/5 text-foreground/70 hover:text-foreground"
+                >
+                  <Bookmark className="h-4 w-4 text-muted-foreground/50" />
+                  <span className="text-sm font-medium">저장된 응답</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  type="button"
                   onClick={handleOpenSettings}
                   isActive={location.pathname === "/settings"}
                   className={`
@@ -281,6 +294,7 @@ export function AppSidebar() {
         </SidebarContent>
       </Sidebar>
       <SettingsModal open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
+      <LikedMessagesPanel open={isLikedOpen} onOpenChange={setIsLikedOpen} />
     </section>
   );
 }

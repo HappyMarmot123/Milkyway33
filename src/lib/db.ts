@@ -51,6 +51,14 @@ export function dexieInit(): MilkywayDB {
         promptTemplates: 'id, name, updatedAt'
     });
 
+    db.version(5).stores({
+        conversations: 'id, updatedAt',
+        messages: 'id, conversationId, timestamp',
+        configs: 'id, updatedAt',
+        tokenUsage: 'id, updatedAt',
+        promptTemplates: 'id, name, updatedAt'
+    });
+
     dbInstance = db;
     return db;
 }

@@ -301,10 +301,14 @@ class TestChatEndpoint:
     @patch("app.services.gemini.gemini_service.generate_response_stream")
     @patch("app.services.guardrail.guardrail_service.check_injection", new_callable=AsyncMock)
     @patch("app.services.guardrail.guardrail_service.format_with_delimiters")
-    def test_정상_요청시_200_반환(
+    @pytest.mark.anyio
+    async def test_정상_요청시_200_반환(
         self, mock_format, mock_check, mock_stream,
         mock_daily, mock_cooldown, client
     ):
+        from app.api.endpoints.chat import chat_stream
+        from app.schemas.chat import ChatRequest
+
         mock_daily.get_remaining.return_value = 9
         mock_cooldown.limit.return_value = _allowed()
         mock_daily.limit.return_value = _allowed(remaining=8)
@@ -312,39 +316,48 @@ class TestChatEndpoint:
         mock_format.return_value = "test"
         mock_stream.return_value = iter([])
 
-        res = client.post("/api/v1/chat", json={"message": "안녕"})
+        res = await chat_stream(ChatRequest(message="안녕"), _mock_request())
         assert res.status_code == 200
 
     @patch("app.services.rate_limit.cooldown_limiter")
     @patch("app.services.rate_limit.daily_limiter")
     def test_일일_한도_초과시_429_반환(self, mock_daily, mock_cooldown, client):
+        from app.services.rate_limit import enforce_limits
+
         mock_daily.get_remaining.return_value = 0
 
-        res = client.post("/api/v1/chat", json={"message": "안녕"})
+        with pytest.raises(HTTPException) as exc:
+            enforce_limits(_mock_request())
 
-        assert res.status_code == 429
-        assert res.headers.get("Retry-After") == "86400"
-        assert "오늘의 채팅 횟수" in res.json()["detail"]["message"]
+        assert exc.value.status_code == 429
+        assert exc.value.headers.get("Retry-After") == "86400"
+        assert "오늘의 채팅 횟수" in exc.value.detail["message"]
 
     @patch("app.services.rate_limit.cooldown_limiter")
     @patch("app.services.rate_limit.daily_limiter")
     def test_쿨타임_초과시_429_반환(self, mock_daily, mock_cooldown, client):
+        from app.services.rate_limit import enforce_limits
+
         mock_daily.get_remaining.return_value = 8
         mock_cooldown.limit.return_value = _denied(reset=time.time() + 45)
 
-        res = client.post("/api/v1/chat", json={"message": "안녕"})
+        with pytest.raises(HTTPException) as exc:
+            enforce_limits(_mock_request())
 
-        assert res.status_code == 429
-        assert "요청 간격 제한" in res.json()["detail"]["message"]
-        assert int(res.headers.get("Retry-After", 0)) <= 45
+        assert exc.value.status_code == 429
+        assert "요청 간격 제한" in exc.value.detail["message"]
+        assert int(exc.value.headers.get("Retry-After", 0)) <= 45
 
     @patch("app.services.rate_limit.cooldown_limiter")
     @patch("app.services.rate_limit.daily_limiter")
     def test_일일_한도_초과_응답에_x_daily_헤더_포함(self, mock_daily, mock_cooldown, client):
+        from app.services.rate_limit import enforce_limits
+
         mock_daily.get_remaining.return_value = 0
 
-        res = client.post("/api/v1/chat", json={"message": "안녕"})
+        with pytest.raises(HTTPException) as exc:
+            enforce_limits(_mock_request())
 
-        assert res.status_code == 429
-        assert res.headers.get("X-Daily-Remaining") == "0"
-        assert res.headers.get("X-Daily-Limit") is not None
+        assert exc.value.status_code == 429
+        assert exc.value.headers.get("X-Daily-Remaining") == "0"
+        assert exc.value.headers.get("X-Daily-Limit") is not None

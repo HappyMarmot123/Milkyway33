@@ -15,6 +15,7 @@ export type ChatActionsContextType = Pick<
   | 'switchConversation'
   | 'deleteConversation'
   | 'renameConversation'
+  | 'setMessageLiked'
 >;
 
 export type ChatMessagesContextType = Pick<

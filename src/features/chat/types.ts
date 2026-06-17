@@ -6,6 +6,13 @@ export interface ChatMessage {
   content: string;
   timestamp: Date;
   metadata?: ChatMetadata;
+  liked?: true | false | null;
+  pinned?: boolean;
+}
+
+export interface HistoryMessage {
+  role: 'user' | 'model';
+  content: string;
 }
 
 export interface Conversation {

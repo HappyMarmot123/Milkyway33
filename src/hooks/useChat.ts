@@ -1,11 +1,13 @@
 import { useState, useCallback, useMemo } from 'react';
 import { ChatDailyLimitError, ChatRateLimitError, streamChat } from '@/api/chat';
+import { summarizeConversation } from '@/api/chat';
 import type { 
   ChatMessage, 
   ChatMetadata, 
   ChatState,
   ChatPromptConfig
 } from '@/features/chat/types';
+import { buildHistory } from '@/lib/historyBuilder';
 import {
   CHAT_COOLDOWN_SECONDS,
   clearChatCooldown,
@@ -99,6 +101,7 @@ export function useChat() {
       content: content.trim(),
       timestamp: new Date(),
     };
+    const history = buildHistory(storedMessages);
     await chatRepository.saveMessage(userMessage);
 
     // Update title if this is the first message
@@ -117,7 +120,7 @@ export function useChat() {
       let fullResponse = '';
       let metadata: ChatMetadata = {};
 
-      for await (const event of streamChat(content, promptConfig)) {
+      for await (const event of streamChat(content, promptConfig, history)) {
         switch (event.status) {
           case 'thinking':
             setStatus('thinking');
@@ -158,6 +161,22 @@ export function useChat() {
                 metadata,
               };
               await chatRepository.saveMessage(assistantMessage);
+
+              if (storedMessages.length + 2 === 6) {
+                const historyForSummary: import('@/features/chat/types').HistoryMessage[] = [
+                  ...storedMessages,
+                  userMessage,
+                  assistantMessage,
+                ].map(message => ({
+                  role: message.role === 'assistant' ? 'model' : 'user',
+                  content: message.content,
+                }));
+                summarizeConversation(historyForSummary).then(summary => {
+                  if (summary) {
+                    chatRepository.updateConversation(conversationId, { title: summary });
+                  }
+                });
+              }
             }
 
             // Save token usage
@@ -205,7 +224,7 @@ export function useChat() {
     status,
     currentConversationId,
     promptConfig,
-    storedMessages.length,
+    storedMessages,
     createNewConversation,
     updateConversationTitle,
   ]);
@@ -236,6 +255,13 @@ export function useChat() {
 
   const setError = useCallback((err: string) => {
     setErrorState(err);
+  }, []);
+
+  const setMessageLiked = useCallback(async (
+    messageId: string,
+    liked: true | false | null
+  ) => {
+    await chatRepository.setMessageLiked(messageId, liked);
   }, []);
 
   const regenerateLastResponse = useCallback(async () => {
@@ -284,5 +310,6 @@ export function useChat() {
     switchConversation,
     deleteConversation,
     renameConversation,
+    setMessageLiked,
   };
 }

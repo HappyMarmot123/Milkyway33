@@ -28,7 +28,8 @@ import {
 interface ResponseActionContainerProps {
   content: string;
   onRegenerate?: () => void;
-  onFeedback?: (type: 'up' | 'down') => void;
+  onFeedback?: (type: 'up' | 'down' | null) => void;
+  feedbackState?: 'up' | 'down' | null;
   className?: string;
 }
 
@@ -74,10 +75,10 @@ export function ResponseActionContainer({
   content, 
   onRegenerate, 
   onFeedback,
+  feedbackState = null,
   className = ""
 }: ResponseActionContainerProps) {
   const [isCopied, setIsCopied] = useState(false);
-  const [feedback, setFeedback] = useState<'up' | 'down' | null>(null);
 
   const handleCopy = async () => {
     try {
@@ -90,9 +91,8 @@ export function ResponseActionContainer({
   };
 
   const handleFeedback = (type: 'up' | 'down') => {
-    const newFeedback = feedback === type ? null : type;
-    setFeedback(newFeedback);
-    if (onFeedback && newFeedback) onFeedback(newFeedback);
+    const next = feedbackState === type ? null : type;
+    onFeedback?.(next);
   };
 
   return (
@@ -101,13 +101,13 @@ export function ResponseActionContainer({
         icon={ThumbsUp} 
         label="Good response" 
         onClick={() => handleFeedback('up')}
-        isActive={feedback === 'up'}
+        isActive={feedbackState === 'up'}
       />
       <ActionButton 
         icon={ThumbsDown} 
         label="Bad response" 
         onClick={() => handleFeedback('down')}
-        isActive={feedback === 'down'}
+        isActive={feedbackState === 'down'}
       />
       <ActionButton 
         icon={RotateCw} 

@@ -33,6 +33,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     switchConversation: (...args) => chatRef.current.switchConversation(...args),
     deleteConversation: (...args) => chatRef.current.deleteConversation(...args),
     renameConversation: (...args) => chatRef.current.renameConversation(...args),
+    setMessageLiked: (...args) => chatRef.current.setMessageLiked(...args),
   }), []);
 
   const messages = useMemo<ChatMessagesContextType>(() => ({

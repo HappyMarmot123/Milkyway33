@@ -2,10 +2,22 @@
 from typing import Optional, List, Any
 from pydantic import BaseModel
 
+
+class ChatHistoryMessage(BaseModel):
+    role: str
+    content: str
+
+
 class ChatRequest(BaseModel):
     message: str
     system_instruction: Optional[str] = None
     few_shot_examples: Optional[List[dict[str, str]]] = None
+    history: List[ChatHistoryMessage] = []
+
+
+class SummarizeRequest(BaseModel):
+    messages: List[ChatHistoryMessage]
+
 
 class UsageMetadata(BaseModel):
     prompt_token_count: Optional[int] = None

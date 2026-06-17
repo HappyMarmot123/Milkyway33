@@ -1,4 +1,4 @@
-import type { ChatEvent, ChatPromptConfig } from '@/features/chat/types';
+import type { ChatEvent, ChatPromptConfig, HistoryMessage } from '@/features/chat/types';
 import { readChatDailyUsageHeaders, setChatDailyUsage } from '@/features/chat/dailyUsageStore';
 
 // In production (Vercel) the API is same-origin at /api/v1.
@@ -102,7 +102,11 @@ export class ChatDailyLimitError extends Error {
  * Streaming chat API client
  * Yields ChatEvent objects as they arrive from the server
  */
-export async function* streamChat(message: string, config?: ChatPromptConfig): AsyncGenerator<ChatEvent> {
+export async function* streamChat(
+  message: string,
+  config?: ChatPromptConfig,
+  history?: HistoryMessage[],
+): AsyncGenerator<ChatEvent> {
   const body: any = { message };
   
   if (config) {
@@ -115,6 +119,10 @@ export async function* streamChat(message: string, config?: ChatPromptConfig): A
         output: ex.output
       }));
     }
+  }
+
+  if (history && history.length > 0) {
+    body.history = history;
   }
 
   const response = await fetch(`${API_BASE_URL}/chat`, {
@@ -190,4 +198,17 @@ export async function* streamChat(message: string, config?: ChatPromptConfig): A
   } finally {
     reader.releaseLock();
   }
+}
+
+export async function summarizeConversation(
+  messages: HistoryMessage[]
+): Promise<string> {
+  const res = await fetch(`${API_BASE_URL}/chat/summarize`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages }),
+  });
+  if (!res.ok) return '';
+  const data = await res.json();
+  return data.summary ?? '';
 }

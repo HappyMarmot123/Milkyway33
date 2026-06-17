@@ -27,7 +27,8 @@ class GeminiService:
         self, 
         message: str, 
         system_instruction: str = None,
-        few_shot_examples: list[dict] = None
+        few_shot_examples: list[dict] = None,
+        history: list[dict] = None,
     ) -> AsyncIterator[str]:
         """
         Streaming response using latest google-genai (v1) SDK.
@@ -61,6 +62,15 @@ class GeminiService:
                                 parts=[genai.types.Part.from_text(text=example['output'])]
                             )
                         )
+
+            if history:
+                for turn in history:
+                    request_contents.append(
+                        genai.types.Content(
+                            role=turn["role"],
+                            parts=[genai.types.Part.from_text(text=turn["content"])]
+                        )
+                    )
             
             # Add the actual user message
             request_contents.append(

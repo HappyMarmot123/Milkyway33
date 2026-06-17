@@ -71,6 +71,25 @@ export const chatRepository = {
     await db.messages.where('conversationId').equals(conversationId).delete();
   },
 
+  async setMessageLiked(
+    messageId: string,
+    liked: true | false | null
+  ): Promise<void> {
+    const db = dexieInit();
+    await db.messages.update(messageId, {
+      liked,
+      pinned: liked === true,
+    });
+  },
+
+  async getLikedMessages(): Promise<ChatMessage[]> {
+    const db = dexieInit();
+    const all = await db.messages.toArray();
+    return all
+      .filter(m => m.liked === true)
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  },
+
   // Settings
   async saveSettings(config: ChatPromptConfig): Promise<void> {
     const db = dexieInit();
