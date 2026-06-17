@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ModelSettings } from "@/components/features/ModelSettings";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { TokenUsage } from "@/components/features/TokenUsage";
+import { PromptTemplateSection } from "@/components/features/PromptTemplateSection";
 import { chatRepository } from "@/services/chatRepository";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, RefreshCcw, Sparkles, Zap, Settings, ChevronRight, Cpu } from "lucide-react";
@@ -187,6 +188,8 @@ export function SettingsPanel({ showHeader = true }: SettingsPanelProps) {
         </Card>
       </section>
 
+
+      <PromptTemplateSection />
 
       <section aria-label="debug-error-section" className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-75">
         <Card className="min-w-0 bg-gradient-to-br from-bg-200/50 to-bg-100/50 backdrop-blur-xl border-white/10">

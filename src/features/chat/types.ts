@@ -25,6 +25,16 @@ export interface ChatPromptConfig {
   examples?: ChatMessageExample[];
 }
 
+export interface PromptTemplate {
+  id: string;
+  name: string;
+  description: string;
+  systemInstruction: string;
+  examples: ChatMessageExample[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface ChatMetadata {
   model_used?: string;
   thought?: string | null;

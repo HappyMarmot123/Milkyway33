@@ -4,6 +4,9 @@ import { scan } from 'react-scan'
 import './index.css'
 import App from './App.jsx'
 import { ThemeProvider } from './contexts/ThemeContext'
+import { promptTemplateRepository } from './services/promptTemplateRepository'
+
+promptTemplateRepository.seed().catch(() => {})
 
 scan({
   enabled: import.meta.env.DEV,

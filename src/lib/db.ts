@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie';
-import { ChatMessage, ChatPromptConfig, Conversation } from '@/features/chat/types';
+import { ChatMessage, ChatPromptConfig, Conversation, PromptTemplate } from '@/features/chat/types';
 
 // Define DB entities
 export interface PromptConfigEntity {
@@ -26,6 +26,7 @@ export type MilkywayDB = Dexie & {
     messages: EntityTable<ChatMessage, 'id'>;
     configs: EntityTable<PromptConfigEntity, 'id'>;
     tokenUsage: EntityTable<TokenUsageEntity, 'id'>;
+    promptTemplates: EntityTable<PromptTemplate, 'id'>;
 };
 
 let dbInstance: MilkywayDB | null = null;
@@ -35,12 +36,19 @@ export function dexieInit(): MilkywayDB {
 
     const db = new Dexie('MilkywayDB') as MilkywayDB;
 
-    // Schema definition - version 3 adds tokenUsage table
     db.version(3).stores({
         conversations: 'id, updatedAt',
         messages: 'id, conversationId, timestamp',
         configs: 'id, updatedAt',
         tokenUsage: 'id, updatedAt'
+    });
+
+    db.version(4).stores({
+        conversations: 'id, updatedAt',
+        messages: 'id, conversationId, timestamp',
+        configs: 'id, updatedAt',
+        tokenUsage: 'id, updatedAt',
+        promptTemplates: 'id, name, updatedAt'
     });
 
     dbInstance = db;
