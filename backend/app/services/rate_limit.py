@@ -1,26 +1,46 @@
 import time
+import os
+import logging
 
 from fastapi import HTTPException, Request, status
 from upstash_ratelimit import FixedWindow, Ratelimit
 from upstash_redis import Redis
 
-
-redis = Redis.from_env()
+logger = logging.getLogger(__name__)
 
 DAILY_LIMIT = 13
 CHAT_COOLDOWN_SECONDS = 10
 
-cooldown_limiter = Ratelimit(
-    redis=redis,
-    limiter=FixedWindow(max_requests=1, window=CHAT_COOLDOWN_SECONDS),
-    prefix="cooldown",
-)
+redis = None
+cooldown_limiter = None
+daily_limiter = None
+init_error = None
 
-daily_limiter = Ratelimit(
-    redis=redis,
-    limiter=FixedWindow(max_requests=DAILY_LIMIT, window=86400),   # 24시간
-    prefix="daily",
-)
+try:
+    url = os.getenv("UPSTASH_REDIS_REST_URL") or os.getenv("KV_REST_API_URL")
+    token = os.getenv("UPSTASH_REDIS_REST_TOKEN") or os.getenv("KV_REST_API_TOKEN")
+
+    if not url or not token:
+        raise ValueError("Neither UPSTASH_REDIS_REST_URL/TOKEN nor KV_REST_API_URL/TOKEN is set.")
+
+    # Strip quotes if present
+    url = url.strip('"\'')
+    token = token.strip('"\'')
+
+    redis = Redis(url=url, token=token)
+    cooldown_limiter = Ratelimit(
+        redis=redis,
+        limiter=FixedWindow(max_requests=1, window=CHAT_COOLDOWN_SECONDS),
+        prefix="cooldown",
+    )
+    daily_limiter = Ratelimit(
+        redis=redis,
+        limiter=FixedWindow(max_requests=DAILY_LIMIT, window=86400),   # 24시간
+        prefix="daily",
+    )
+except Exception as e:
+    init_error = e
+    logger.error(f"Failed to initialize Upstash Redis Rate Limiter: {e}")
 
 
 def get_client_key(request: Request) -> str:
@@ -59,7 +79,23 @@ def raise_daily_limit() -> None:
     )
 
 
+def check_init_error():
+    if init_error:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "message": f"Rate limiter initialization error: {str(init_error)}. Please configure UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN (or KV_REST_API_URL and KV_REST_API_TOKEN) in Vercel environment variables.",
+            }
+        )
+
+
+def get_daily_remaining(key: str) -> int:
+    check_init_error()
+    return daily_limiter.get_remaining(key)
+
+
 def enforce_limits(request: Request) -> dict[str, int]:
+    check_init_error()
     key = get_client_key(request)
     daily_remaining = daily_limiter.get_remaining(key)
 
