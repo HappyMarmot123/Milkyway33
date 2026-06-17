@@ -9,5 +9,7 @@ dependencies = [
     "google-genai>=1.47.0",
     "python-dotenv>=1.2.1",
     "requests>=2.32.5",
+    "upstash-ratelimit>=1.1.0",
+    "upstash-redis>=1.7.0",
     "uvicorn>=0.22.0",
 ]

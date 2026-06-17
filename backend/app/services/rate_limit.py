@@ -41,8 +41,6 @@ class ChatRateLimiter:
                     retry_after=max(1, int(next_allowed_at - now)),
                 )
 
-            # Reserve before the Gemini call starts, so parallel requests cannot
-            # race past the limiter and consume multiple free-plan requests.
             self._next_allowed_by_key[key] = now + self.cooldown_seconds
             self._cleanup(now)
             return RateLimitResult(allowed=True)
