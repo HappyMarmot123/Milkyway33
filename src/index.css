@@ -96,6 +96,7 @@
 
 #root {
   width: 100%;
+  overflow-x: hidden;
 }
 
 a {
@@ -113,6 +114,7 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 button {

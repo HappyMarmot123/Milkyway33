@@ -9,10 +9,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     <ChatProvider>
       <SidebarProvider>
         <AppSidebar />
-        <SidebarInset>
+        <SidebarInset className="min-w-0 overflow-x-hidden">
           <Header />
           <Separator />
-          <div aria-label="app-content" className="flex-1 overflow-auto bg-muted/30">
+          <div aria-label="app-content" className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto bg-muted/30">
             {children}
           </div>
         </SidebarInset>

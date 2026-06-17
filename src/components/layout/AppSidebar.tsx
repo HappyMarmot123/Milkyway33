@@ -26,13 +26,15 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useChatActions, useChatConversations } from "@/contexts/ChatContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SettingsModal } from "@/components/features/SettingsModal";
 
 export function AppSidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { conversations, currentConversationId } = useChatConversations();
   const {
     createNewConversation,
@@ -43,19 +45,24 @@ export function AppSidebar() {
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // Get recent conversations (up to 10 for sidebar display)
   const recentConversations = useMemo(() => conversations.slice(0, 10), [conversations]);
 
   const handleNewChat = useCallback(async () => {
     await createNewConversation();
-  }, [createNewConversation]);
+    navigate("/chat");
+  }, [createNewConversation, navigate]);
 
   const handleConversationClick = useCallback((conversationId: string) => {
     if (editingId !== conversationId) {
       switchConversation(conversationId);
+      if (location.pathname !== "/chat") {
+        navigate("/chat");
+      }
     }
-  }, [editingId, switchConversation]);
+  }, [editingId, location.pathname, navigate, switchConversation]);
 
   const handleRenameStart = useCallback((conv: { id: string; title: string }) => {
     setEditingId(conv.id);
@@ -79,13 +86,17 @@ export function AppSidebar() {
     await deleteConversation(conversationId);
   }, [deleteConversation]);
 
+  const handleOpenSettings = useCallback(() => {
+    setIsSettingsOpen(true);
+  }, []);
+
   return (
     <section aria-label="app-sidebar">
       <Sidebar className="border-r border-white/5 bg-gradient-to-b from-bg-100 to-bg-0">
         {/* Header: Logo with glow effect */}
         <SidebarHeader className="px-5 py-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <Link to="/chat" className="flex items-center gap-3">
               {/* Glowing logo icon */}
               <div className="relative group">
                 {/* Subtle outer glow */}
@@ -105,7 +116,7 @@ export function AppSidebar() {
               <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-white via-orange-200 to-amber-200 bg-clip-text text-transparent">
                 Milkyway AI
               </span>
-            </div>
+            </Link>
             <SidebarTrigger className="hover:bg-white/5 rounded-lg transition-colors" />
           </div>
         </SidebarHeader>
@@ -235,30 +246,31 @@ export function AppSidebar() {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  asChild
+                  type="button"
+                  onClick={handleOpenSettings}
                   isActive={location.pathname === "/settings"}
                   className={`
+                    flex w-full items-center gap-3
                     h-10 px-3 rounded-xl transition-all duration-200
                     ${location.pathname === "/settings"
-                      ? "bg-white/10 text-foreground"
-                      : "bg-transparent hover:bg-white/5 text-foreground/70 hover:text-foreground"
+                      ? "!bg-white/10 text-foreground"
+                      : "!bg-transparent hover:!bg-white/5 text-foreground/70 hover:text-foreground"
                     }
                   `}
                 >
-                  <Link to="/settings" className="flex items-center gap-3">
-                    <Settings className={`h-4 w-4 transition-colors ${
-                      location.pathname === "/settings" 
-                        ? "text-orange-400" 
-                        : "text-muted-foreground/50"
-                    }`} />
-                    <span className="text-sm font-medium">설정</span>
-                  </Link>
+                  <Settings className={`h-4 w-4 transition-colors ${
+                    location.pathname === "/settings"
+                      ? "text-orange-400"
+                      : "text-muted-foreground/50"
+                  }`} />
+                  <span className="text-sm font-medium">설정</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
           </div>
         </SidebarContent>
       </Sidebar>
+      <SettingsModal open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
     </section>
   );
 }
