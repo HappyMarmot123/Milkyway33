@@ -53,7 +53,7 @@ export function Features() {
   });
 
   return (
-    <section id="features" className="py-32 md:py-48 bg-background">
+    <section id="features" className="py-20 sm:py-32 md:py-48 bg-background">
       <div className="container mx-auto px-4">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <motion.h2 
