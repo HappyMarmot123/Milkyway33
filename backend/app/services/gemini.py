@@ -1,8 +1,8 @@
-
 from google import genai
 from typing import AsyncIterator, Optional
 import json
 import asyncio
+from fastapi import HTTPException
 from app.core.config import settings
 from app.services.token_usage import token_usage_service
 
@@ -21,12 +21,28 @@ def serialize_usage_metadata(usage_metadata) -> Optional[dict]:
 
 class GeminiService:
     def __init__(self):
-        self.client = genai.Client(api_key=settings.GOOGLE_API_KEY)
+        self.client = None
         self.model_name = settings.GEMINI_MODEL_NAME
         self._model_info: dict | None = None
+        self.init_error = None
+        
+        try:
+            if not settings.GOOGLE_API_KEY:
+                raise ValueError("GOOGLE_API_KEY environment variable is not set.")
+            self.client = genai.Client(api_key=settings.GOOGLE_API_KEY)
+        except Exception as e:
+            self.init_error = e
+
+    def check_init_error(self):
+        if self.init_error:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Gemini service initialization error: {str(self.init_error)}. Please configure GOOGLE_API_KEY in Vercel environment variables."
+            )
 
     async def get_model_info(self) -> dict:
         """Return current Gemini model metadata from the Gemini API."""
+        self.check_init_error()
         if self._model_info is None:
             model = await self.client.aio.models.get(model=self.model_name)
             self._model_info = {
@@ -43,10 +59,13 @@ class GeminiService:
         system_instruction: str = None,
         history: list[dict] = None,
     ) -> AsyncIterator[str]:
-        """
-        Streaming response using latest google-genai (v1) SDK.
-        Extracts all possible metadata including Thinking, Safety, and Usage.
-        """
+        if self.init_error:
+            yield json.dumps({
+                "status": "error",
+                "message": f"Gemini service initialization error: {str(self.init_error)}. Please configure GOOGLE_API_KEY in Vercel environment variables."
+            }) + "\n"
+            return
+        
         try:
             yield json.dumps({"status": "thinking", "model": self.model_name}) + "\n"
             
@@ -145,6 +164,16 @@ class GeminiService:
             }) + "\n"
 
         except Exception as e:
-            yield json.dumps({"status": "error", "message": str(e)}) + "\n"
+            error_msg = str(e)
+            
+            # Translate known Gemini errors to Korean
+            if "503" in error_msg or "UNAVAILABLE" in error_msg or "high demand" in error_msg:
+                error_msg = "현재 AI 서비스(Gemini) 사용량이 매우 많아 일시적으로 서비스를 이용할 수 없습니다. 잠시 후 다시 시도해 주세요."
+            elif "429" in error_msg or "quota" in error_msg.lower() or "RESOURCE_EXHAUSTED" in error_msg:
+                error_msg = "AI 호출 한도(Quota)를 초과했습니다. 잠시 후 다시 시도해 주세요."
+            elif "API_KEY_INVALID" in error_msg or "API key not valid" in error_msg or ("400" in error_msg and "API key" in error_msg):
+                error_msg = "설정된 Gemini API 키가 유효하지 않습니다. Vercel 환경 변수 설정을 확인해 주세요."
+                
+            yield json.dumps({"status": "error", "message": error_msg}) + "\n"
 
 gemini_service = GeminiService()

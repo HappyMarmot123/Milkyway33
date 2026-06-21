@@ -8,14 +8,14 @@ from app.services.token_usage import token_usage_service
 router = APIRouter()
 
 from app.services.guardrail import guardrail_service
-from app.services.rate_limit import DAILY_LIMIT, daily_headers, daily_limiter, enforce_limits, get_client_key
+from app.services.rate_limit import DAILY_LIMIT, daily_headers, enforce_limits, get_client_key, get_daily_remaining
 from google.genai import types as genai_types
 
 
 @router.get("/chat/daily-usage")
 async def get_daily_usage(http_request: Request, response: Response):
     key = get_client_key(http_request)
-    remaining = max(0, daily_limiter.get_remaining(key))
+    remaining = max(0, get_daily_remaining(key))
 
     for header, value in daily_headers(remaining).items():
         response.headers[header] = value

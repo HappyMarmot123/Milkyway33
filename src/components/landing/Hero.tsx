@@ -11,7 +11,7 @@ const partnerLogos = [
 
 export function Hero() {
   return (
-    <section className="relative w-full isolate min-h-screen overflow-hidden">
+    <section className="relative w-full isolate min-h-[100svh] overflow-hidden">
       <ResponsiveHeroBanner
         title="Intelligent"
         titleLine2="Conversations"
@@ -21,7 +21,7 @@ export function Hero() {
       />
       
       {/* Logo Loop at the bottom */}
-      <div className="relative z-20 pt-[5rem] pr-[10rem]">
+      <div className="relative z-20 px-4 pt-12 sm:pt-[5rem] sm:pr-[10rem] sm:pl-0">
         <LogoLoop speed={40} direction="left" pauseOnHover>
           {partnerLogos.map((logo) => (
             <LogoLoopItem key={logo.name}>

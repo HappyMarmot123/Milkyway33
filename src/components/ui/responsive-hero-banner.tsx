@@ -32,10 +32,10 @@ const ResponsiveHeroBanner = ({
                 </div>
             </header>
             <div className="z-10 relative">
-                <div className="max-w-7xl mx-auto lg:pt-[18rem] px-6">
+                <div className="max-w-7xl mx-auto pt-28 sm:pt-36 md:pt-48 lg:pt-[18rem] px-6">
                     <div className="max-w-4xl text-left">
                         <motion.h1
-                            className="text-6xl md:text-7xl lg:text-8xl tracking-tight font-extrabold pb-4 bg-clip-text text-transparent bg-gradient-to-br from-white via-white to-[#ff6b35] leading-[0.9] font-sans animate-[fadeSlideIn_0.6s_ease-out_0.1s_forwards] opacity-0"
+                            className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl tracking-tight font-extrabold pb-4 bg-clip-text text-transparent bg-gradient-to-br from-white via-white to-[#ff6b35] leading-[1] md:leading-[0.9] font-sans animate-[fadeSlideIn_0.6s_ease-out_0.1s_forwards] opacity-0"
                         >
                             {title}
                             <br />

@@ -110,7 +110,7 @@ export function SettingsPanel({ showHeader = true }: SettingsPanelProps) {
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="font-semibold text-sm">Gemini 2.5 Flash Lite</span>
+                  <span className="font-semibold text-sm">Gemini 2.5 Flash</span>
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-medium shrink-0">
                     사용 중
                   </span>

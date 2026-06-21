@@ -1,6 +1,13 @@
 import { useSyncExternalStore } from 'react';
 
-export const CHAT_COOLDOWN_SECONDS = 10;
+const DEFAULT_CHAT_COOLDOWN_SECONDS = 30;
+
+function readChatCooldownSeconds(): number {
+  const parsed = Number.parseInt(import.meta.env.VITE_CHAT_COOLDOWN_SECONDS ?? '', 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_CHAT_COOLDOWN_SECONDS;
+}
+
+export const CHAT_COOLDOWN_SECONDS = readChatCooldownSeconds();
 
 const CHAT_COOLDOWN_STORAGE_KEY = 'milkyway_chat_cooldown_until';
 

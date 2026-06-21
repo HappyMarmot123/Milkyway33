@@ -16,7 +16,7 @@ export function PhysicsSection() {
   const opacity = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0, 1, 1, 0]);
 
   return (
-    <section ref={containerRef} className="relative w-full overflow-hidden py-32 flex flex-col items-center justify-center">
+    <section ref={containerRef} className="relative w-full overflow-hidden py-16 sm:py-32 flex flex-col items-center justify-center">
 {/* Natural Circular Background centered on title */}
             <div 
               className="absolute z-10 left-1/2 top-1/3 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] rounded-full -z-10 opacity-80 pointer-events-none blur-3xl"
@@ -37,7 +37,7 @@ export function PhysicsSection() {
           </div>
           <motion.div 
             style={{ y, opacity }}
-            className="flex items-center gap-2 sm:gap-4 text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight mb-8 bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60 leading-[1.1]"
+            className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-2 sm:gap-4 text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight mb-8 text-center bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60 leading-[1.1]"
           >
             <span>Milky Way that is</span>
             <div className="bg-primary/10 border border-primary/20 px-3 sm:px-4 py-1 sm:py-2 rounded-xl text-primary inline-flex items-center justify-center">
@@ -58,7 +58,7 @@ export function PhysicsSection() {
         </div>
 
         {/* Falling Text Canvas */}
-        <div className="w-[80%] h-[300px] mx-auto rounded-3xl border border-white/10 bg-black/40 backdrop-blur-sm relative overflow-hidden">
+        <div className="w-[92%] sm:w-[80%] h-[240px] sm:h-[300px] mx-auto rounded-3xl border border-white/10 bg-black/40 backdrop-blur-sm relative overflow-hidden">
           <FallingText
             text={`Limitless Brilliant Cosmic Stellar Infinite Luminous Yours`}
             highlightWords={["Yours"]}

@@ -1,3 +1,4 @@
+import os
 from upstash_redis.asyncio import Redis
 
 SHARED_TOKEN_KEY = "shared:token_usage"
@@ -6,11 +7,29 @@ SHARED_TOKEN_KEY = "shared:token_usage"
 class TokenUsageService:
     def __init__(self):
         self._redis: Redis | None = None
+        self.init_error = None
 
     @property
     def redis(self) -> Redis:
+        if self.init_error:
+            raise ValueError(self.init_error)
+
         if self._redis is None:
-            self._redis = Redis.from_env()
+            try:
+                url = os.getenv("UPSTASH_REDIS_REST_URL") or os.getenv("KV_REST_API_URL")
+                token = os.getenv("UPSTASH_REDIS_REST_TOKEN") or os.getenv("KV_REST_API_TOKEN")
+
+                if not url or not token:
+                    raise ValueError("Neither UPSTASH_REDIS_REST_URL/TOKEN nor KV_REST_API_URL/TOKEN is set.")
+
+                # Strip quotes if present
+                url = url.strip('"\'')
+                token = token.strip('"\'')
+
+                self._redis = Redis(url=url, token=token)
+            except Exception as e:
+                self.init_error = e
+                raise ValueError(f"Failed to initialize Redis: {e}")
         return self._redis
 
     async def accumulate(self, usage: dict) -> None:
