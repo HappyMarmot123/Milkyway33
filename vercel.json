@@ -1,6 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "npm run build",
+  "buildCommand": "if [ -d \"Milkyway-33\" ]; then (cd Milkyway-33 && npm run build && mkdir -p ../dist && rm -rf ../dist/* && cp -r dist/. ../dist/); else npm run build; fi",
+  "installCommand": "if [ -d \"Milkyway-33\" ]; then (cd Milkyway-33 && npm install); else npm install; fi",
   "outputDirectory": "dist",
   "framework": "vite",
   "functions": {
