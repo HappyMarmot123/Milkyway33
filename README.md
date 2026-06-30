@@ -47,7 +47,7 @@ uv run python cli_chat.py
 | 변수 | 역할 |
 |---|---|
 | `GOOGLE_API_KEY` | Gemini API key |
-| `GEMINI_MODEL_NAME` | 사용 모델 (기본값 `gemini-2.5-flash-lite`) |
+| `GEMINI_MODEL_NAME` | 사용 모델 (기본값 `gemini-2.5-flash`) |
 | `UPSTASH_REDIS_REST_URL` | Upstash Redis URL |
 | `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis token |
 | `VITE_API_BASE_URL` | 프론트 API base (기본값 `/api/v1`) |

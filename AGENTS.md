@@ -40,7 +40,7 @@ uv run uvicorn main:app --reload --port 8888     # preferred (README)
 ```
 - Docs: http://localhost:8888/docs · chat endpoint: `POST /api/v1/chat`
 - Requires `backend/.env` with `GOOGLE_API_KEY` and `GEMINI_MODEL_NAME`
-  (defaults to `gemini-2.5-flash-lite`). `.env` is gitignored — never commit it.
+  (defaults to `gemini-2.5-flash`). `.env` is gitignored — never commit it.
 
 ## Critical conventions & gotchas
 

@@ -22,7 +22,7 @@
 
 | 영역 | 구현 위치 | 상태 |
 |---|---|---|
-| 스트리밍 채팅 (Gemini SSE) | `backend/app/services/gemini.py` | ✅ |
+| 스트리밍 채팅 (Gemini NDJSON) | `backend/app/services/gemini.py` | ✅ |
 | Rate limit / quota | `backend/app/services/rate_limit.py` (일 13회 + 10s 쿨다운) | ✅ |
 | 공유 토큰/비용 추적 | `backend/app/services/token_usage.py` (Upstash Redis Hash) | ✅ |
 | Prompt injection 방어 | `backend/app/services/guardrail.py` (정규식 기반) | 🟡 기초 |
@@ -121,7 +121,7 @@
 - 유사 질문/임베딩/검색 결과 캐싱 → 비용 절감. **이미 쓰는 Upstash Redis 재활용**.
 
 ### 4.2 모델 라우팅
-- 쉬운 요청 → 저렴한 모델(flash-lite), 어려운 요청 → 강한 모델. 분류기 또는 휴리스틱.
+- 쉬운 요청 → 저렴한 후보 모델, 어려운 요청 → 강한 모델. 분류기 또는 휴리스틱.
 
 ### 4.3 Guardrail 강화 (현재 정규식 → 고도화)
 - Prompt injection 방어(RAG 문서/웹페이지의 "이전 지시 무시" 무력화), **PII/비밀정보 탐지·마스킹**, moderation(입출력 정책 검사).
