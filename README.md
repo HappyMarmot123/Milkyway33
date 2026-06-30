@@ -10,14 +10,14 @@ Google Gemini 기반 스트리밍 채팅 앱. React 19 + Vite 프론트엔드와
 
 - **[기술 문서 — TECH-OVERVIEW](./project-docs/TECH-OVERVIEW.md)** — 현재 아키텍처(백엔드 NDJSON 스트리밍 구조, 프론트 채팅 수신/저장, 싱글톤·Redis·Dexie). *기능 수정 전 영향 범위 파악용 운영 문서.*
 - **[기능 로드맵 — LLM 엔지니어링](./project-docs/LLM-ENGINEERING-ROADMAP.md)** — 앞으로 구현할 기능 로드맵(데이터 파이프라인·RAG·에이전트·운영·도구)
-  - [Phase 0 — 데이터 파이프라인](./project-docs/phases/phase-0-data-pipeline.md) — 크롤링부터 벡터 적재까지 (입문 튜토리얼)
-  - [Phase 1 — RAG 코어](./project-docs/phases/phase-1-rag-core.md) — 검색 + citation 답변
-  - [Phase 2 — 평가 & 모델 성능](./project-docs/phases/phase-2-eval.md) — recall·groundedness 측정
-  - [Phase 3 — 에이전트](./project-docs/phases/phase-3-agent.md) — ReAct·planner·HITL
-  - [Phase 4 — 운영 & 안전성](./project-docs/phases/phase-4-ops-safety.md) — 캐싱·라우팅·가드레일
-  - [Phase 5 — 개발자 도구 & 고급](./project-docs/phases/phase-5-devtools.md) — playground·trace·GraphRAG
+  - [Phase 0 — 데이터 파이프라인](./project-docs/phases/phase-0-data-pipeline.md) — 크롤링부터 벡터 적재까지의 기능명세와 구현 절차
+  - [Phase 1 — RAG 코어](./project-docs/phases/phase-1-rag-core.md) — 검색 + citation 답변 기능명세
+  - [Phase 2 — 평가 & 모델 성능](./project-docs/phases/phase-2-eval.md) — recall·groundedness 측정 기능명세
+  - [Phase 3 — 에이전트](./project-docs/phases/phase-3-agent.md) — ReAct·planner·HITL 기능명세
+  - [Phase 4 — 운영 & 안전성](./project-docs/phases/phase-4-ops-safety.md) — 캐싱·라우팅·가드레일 기능명세
+  - [Phase 5 — 개발자 도구 & 고급](./project-docs/phases/phase-5-devtools.md) — playground·trace·GraphRAG 기능명세
 
-> 기술 문서는 "현재 무엇이 구현돼 있나", 기능 로드맵은 "앞으로 무엇을 만들 것인가"를 다룬다.
+> 기술 문서는 "현재 무엇이 구현돼 있나", 기능 로드맵과 Phase별 문서는 "앞으로 무엇을 어떤 기준으로 만들 것인가"를 다룬다.
 
 ---
 

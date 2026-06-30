@@ -1,128 +1,306 @@
-# Phase 3 — 에이전트
+# Phase 3 — 에이전트 기능명세서
 
-> 목표: 단일 응답을 넘어 "생각→도구 호출→관찰→다음 행동" 루프와 다단계 작업 관리.
-> 프론트에 `chain-of-thought.tsx`, `tool.tsx`, `plan.tsx`, `task.tsx`, `confirmation.tsx`가 이미 존재 → 백엔드 이벤트만 맞추면 시각화가 바로 붙는다.
+> 목적: 단일 응답형 채팅을 넘어, 계획 수립·도구 호출·상태 저장·사용자 승인까지 포함한 다단계 작업 실행 구조를 만든다.
 
-## 서버리스 제약과 설계 원칙
-- Vercel 함수 60s 제한 → **한 요청 = 한 스텝(또는 몇 스텝)**. 장기 작업은 상태를 **Upstash Redis에 저장**하고 클라이언트가 다음 스텝을 폴링/재요청.
-- 모든 도구는 멱등·타임아웃·검증 가능하게.
+---
 
-## 추가 파일
+## 1. 배경과 문제정의
+
+현재 Milkyway-33의 채팅은 사용자가 한 번 묻고 모델이 한 번 답하는 구조다. 이 방식은 단순 질의응답에는 충분하지만, "문서를 찾아 비교하고 부족한 항목을 정리해줘", "여러 단계로 계획을 세워 진행해줘" 같은 작업에는 한계가 있다.
+
+에이전트 기능은 모델이 다음 일을 할 수 있게 만든다.
+
+- 사용자의 목표를 단계별 plan으로 나눈다.
+- 각 단계에 필요한 도구를 선택한다.
+- 도구 호출 결과를 관찰하고 다음 행동을 결정한다.
+- 장기 작업 상태를 Redis에 저장해 이어서 진행한다.
+- 위험한 행동은 사용자 승인 전 멈춘다.
+
+단, Vercel serverless 환경에서는 하나의 요청이 오래 실행될 수 없다. 따라서 "한 요청에서 모든 일을 끝내는 자율 에이전트"가 아니라, 한 요청에서 제한된 step을 실행하고 상태를 저장한 뒤 `task_id`로 이어서 진행하는 구조가 필요하다.
+
+## 2. 사용자 시나리오
+
+### 2.1 계획 생성과 실행
+
+1. 사용자가 "Milkyway-33 문서에서 RAG 관련 부족한 부분을 찾아 작업 목록으로 정리해줘"라고 요청한다.
+2. 백엔드는 goal을 받아 planner를 실행한다.
+3. planner는 `문서 검색 -> 관련 내용 요약 -> 부족한 요구사항 정리 -> 최종 답변` 같은 plan을 만든다.
+4. 프론트는 `plan` 이벤트를 받아 단계 목록을 표시한다.
+5. executor는 첫 번째 pending step을 실행한다.
+6. 도구가 필요하면 `tool_call` 이벤트를 보내고, 결과를 `tool_result` 이벤트로 보낸다.
+7. 각 단계 상태는 `task_update` 이벤트로 갱신된다.
+8. 요청 제한에 도달하거나 step이 남으면 Redis에 상태를 저장하고 `task_id`를 반환한다.
+9. 프론트는 사용자가 계속 진행을 누르거나 자동으로 `/agent/continue`를 호출한다.
+
+### 2.2 사용자 승인 흐름
+
+1. 에이전트가 위험 도구를 실행하려 한다.
+2. 백엔드는 실행하지 않고 `approval_required` 이벤트를 보낸다.
+3. 프론트는 `confirmation.tsx` 기반 승인 UI를 띄운다.
+4. 사용자가 승인하면 `/api/v1/agent/approve`를 호출한다.
+5. 거절하면 해당 step은 cancelled 또는 skipped가 된다.
+
+초기 MVP에서는 실제 위험 도구를 제공하지 않는다. 승인 흐름은 구조만 먼저 만든다.
+
+## 3. 범위
+
+### 3.1 포함 범위
+
+- Agent task id 생성
+- Planner/Executor 분리
+- Tool registry
+- ReAct loop 기본 구조
+- Redis task state 저장
+- plan/task/tool/approval NDJSON 이벤트
+- 안전한 초기 도구 3개
+- max step 제한
+- task 조회/continue/approve endpoint
+
+### 3.2 제외 범위
+
+- shell 실행 도구
+- 파일 삭제/쓰기 도구
+- 외부 이메일/결제/구매 도구
+- 무제한 autonomous loop
+- background worker
+- multi-agent 협업의 production 구현
+
+## 4. 시스템 구성
+
+| 모듈 | 책임 |
+|---|---|
+| `backend/app/agent/tools.py` | 도구 registry와 schema |
+| `backend/app/agent/planner.py` | goal을 step list로 변환 |
+| `backend/app/agent/executor.py` | pending step 실행 |
+| `backend/app/agent/react.py` | thought/action/observation loop |
+| `backend/app/agent/state.py` | Redis task state 저장/조회 |
+| `backend/app/api/endpoints/agent.py` | start/continue/approve/status endpoint |
+| `src/api/agent.ts` | NDJSON client |
+| chat message renderer | plan/task/tool/confirmation UI mapping |
+
+## 5. 상태 모델
+
+### 5.1 Redis key
+
+```text
+agent:{task_id}:plan
+agent:{task_id}:progress
+agent:{task_id}:pending_approval
+agent:{task_id}:trace
 ```
-backend/app/agent/
-  tools.py            # 도구 레지스트리 (함수 + JSON 스키마)
-  react.py            # ReAct 루프
-  planner.py          # 3.2 계획 수립
-  executor.py         # 3.2 단계 실행
-  state.py            # 3.3 Redis 기반 작업 상태
-backend/app/api/endpoints/agent.py
+
+모든 key는 TTL을 가진다. 기본 TTL은 24시간이다. 만료된 task는 복구할 수 없으며 사용자에게 "작업 상태가 만료되었습니다"라고 안내한다.
+
+### 5.2 Plan object
+
+```json
+{
+  "task_id": "agent_docs_review_001",
+  "goal": "Milkyway-33 문서에서 RAG 관련 부족한 부분 정리",
+  "status": "running",
+  "steps": [
+    {
+      "id": "step_1",
+      "title": "관련 문서 검색",
+      "description": "RAG와 데이터 파이프라인 문서를 검색한다.",
+      "tool": "search_docs",
+      "args": {"query": "Milkyway-33 RAG 기능명세"},
+      "status": "done",
+      "result_ref": "agent:agent_docs_review_001:progress:step_1"
+    }
+  ],
+  "created_at": "2026-06-30T00:00:00Z",
+  "expires_at": "2026-07-01T00:00:00Z"
+}
 ```
 
-## 3.1 ReAct 루프 — `agent/react.py`
-도구 정의(레지스트리):
-```python
-# tools.py
-TOOLS = {}
-def tool(name, schema):
-    def deco(fn): TOOLS[name] = {"fn": fn, "schema": schema}; return fn
-    return deco
+### 5.3 Step status
 
-@tool("search_docs", {"type": "object", "properties": {"query": {"type": "string"}}})
-async def search_docs(query: str) -> str:
-    from app.services.vector_store import vector_store
-    from app.services.embedding import embedding_service
-    hits = vector_store.search(embedding_service.embed_query(query), top_k=3)
-    return "\n".join(h["text"] for h in hits)
+| 상태 | 의미 |
+|---|---|
+| `pending` | 아직 실행 전 |
+| `running` | 현재 실행 중 |
+| `waiting_approval` | 사용자 승인 대기 |
+| `done` | 성공 |
+| `failed` | 실패 |
+| `skipped` | 승인 거절 또는 조건상 생략 |
+| `cancelled` | 사용자가 작업 취소 |
+
+## 6. API 계약
+
+### 6.1 Start
+
+```http
+POST /api/v1/agent/start
+Content-Type: application/json
 ```
-루프(이벤트를 기존 SSE 포맷으로 방출 → 프론트 `tool.tsx`/`chain-of-thought.tsx`가 소비):
-```python
-async def react_run(goal: str, max_steps=5):
-    scratchpad = []
-    for step in range(max_steps):
-        decision = await llm_decide(goal, scratchpad, TOOLS)  # {thought, action, action_input} or {final}
-        yield {"status": "thought", "text": decision["thought"]}
-        if decision.get("final"):
-            yield {"status": "complete", "response": decision["final"]}; return
-        yield {"status": "tool_call", "name": decision["action"], "input": decision["action_input"]}
-        observation = await TOOLS[decision["action"]]["fn"](**decision["action_input"])
-        yield {"status": "tool_result", "name": decision["action"], "output": observation[:500]}
-        scratchpad.append((decision, observation))
-    yield {"status": "complete", "response": "최대 스텝 도달"}
+
+Request:
+
+```json
+{
+  "goal": "Milkyway-33 문서를 검토하고 RAG 구현 Task를 정리해줘",
+  "mode": "planner_executor",
+  "max_steps": 5
+}
 ```
-- **이벤트 매핑**: `thought`→chain-of-thought, `tool_call`/`tool_result`→tool, `complete`→메시지.
 
-## 3.2 Planner / Executor 분리
-```python
-# planner.py — 작업을 단계 목록으로 분해
-async def make_plan(goal: str) -> list[dict]:
-    # LLM → [{"id":1,"desc":"문서 검색","tool":"search_docs"}, ...]
-    ...
+Response/stream events:
 
-# executor.py — 한 번에 한 단계 실행 + 상태 갱신
-async def run_step(task_id: str, step_id: int):
-    plan = await state.get_plan(task_id)
-    step = plan[step_id]
-    result = await TOOLS[step["tool"]]["fn"](**step["args"])
-    await state.mark_done(task_id, step_id, result)
+```json
+{"status":"plan","task_id":"agent_1","steps":[{"id":"step_1","title":"문서 검색","status":"pending"}]}
+{"status":"task_update","task_id":"agent_1","step_id":"step_1","state":"running"}
+{"status":"tool_call","name":"search_docs","input":{"query":"Milkyway-33 RAG"}}
+{"status":"tool_result","name":"search_docs","output":"검색 결과 요약"}
+{"status":"task_update","task_id":"agent_1","step_id":"step_1","state":"done"}
+{"status":"complete","task_id":"agent_1","response":"작업 요약"}
 ```
-- 프론트 `plan.tsx`(계획 표시) + `task.tsx`(단계별 진행) 연결.
 
-## 3.3 장기 작업 상태 관리 — `agent/state.py` (Upstash Redis 재사용)
-```python
-from upstash_redis.asyncio import Redis
-import json
+### 6.2 Continue
 
-class AgentState:
-    def __init__(self): self._r = None
-    @property
-    def r(self) -> Redis:
-        if self._r is None: self._r = Redis.from_env()
-        return self._r
-
-    async def save_plan(self, task_id, plan):
-        await self.r.set(f"agent:{task_id}:plan", json.dumps(plan), ex=86400)
-    async def get_plan(self, task_id):
-        return json.loads(await self.r.get(f"agent:{task_id}:plan") or "[]")
-    async def mark_done(self, task_id, step_id, result):
-        await self.r.hset(f"agent:{task_id}:progress", str(step_id),
-                          json.dumps({"status": "done", "result": result[:1000]}))
-    async def next_pending(self, task_id):
-        plan = await self.get_plan(task_id)
-        prog = await self.r.hgetall(f"agent:{task_id}:progress") or {}
-        for s in plan:
-            if str(s["id"]) not in prog: return s
-        return None
-
-agent_state = AgentState()
+```http
+POST /api/v1/agent/continue
 ```
-- **실패 복구**: 스텝 결과를 Redis에 남기므로, 함수가 죽어도 `next_pending`부터 재개.
-- **이어서 실행**: 클라이언트가 `task_id`로 `/agent/continue` 재호출.
 
-## 3.4 Human-in-the-loop 승인 — `confirmation.tsx` 연결
-```python
-DANGEROUS = {"delete_file", "send_email", "charge_payment"}
+Request:
 
-async def maybe_pause_for_approval(task_id, step):
-    if step["tool"] in DANGEROUS:
-        await agent_state.r.set(f"agent:{task_id}:pending_approval",
-                                json.dumps(step), ex=3600)
-        return {"status": "approval_required", "step": step}  # → confirmation.tsx
-    return None
-# 승인 시 /agent/approve {task_id, approved: true} → 실행 재개
+```json
+{"task_id":"agent_1","max_steps":3}
 ```
-- 위험 행동(파일 삭제·결제·이메일) 전 **반드시 정지** → 사용자 승인 후 진행.
 
-## 3.5 Multi-agent
-- 역할 분리: `researcher`(검색·수집) → `coder`(초안 작성) → `reviewer`(검증).
-- 구현: 각 역할별 system_instruction + 공유 scratchpad(Redis). reviewer가 reject하면 coder로 되돌림(최대 N회).
-- 시작은 2-agent(생성↔검증)로 작게.
+기존 plan에서 다음 pending step부터 실행한다.
 
-## 완료 기준
-- [ ] ReAct가 도구를 호출하고 thought/tool 이벤트를 스트리밍
-- [ ] planner가 만든 계획이 `plan.tsx`에 표시
-- [ ] 함수 재시작 후 `task_id`로 중단 지점부터 재개
-- [ ] 위험 도구 호출 시 승인 대기 → 승인 후 실행
-- [ ] (선택) reviewer가 1회 이상 반려·재작성 유도
+### 6.3 Approve
 
-## 다음 단계
-→ [Phase 4 — 운영 & 안전성](./phase-4-ops-safety.md)
+```http
+POST /api/v1/agent/approve
+```
+
+Request:
+
+```json
+{"task_id":"agent_1","step_id":"step_2","approved":true}
+```
+
+승인된 step만 실행한다. 승인 대기 상태가 아닌 step에 approve 요청이 오면 409로 응답한다.
+
+### 6.4 Status
+
+```http
+GET /api/v1/agent/{task_id}
+```
+
+현재 plan, progress, pending approval 여부를 반환한다.
+
+## 7. 도구 정책
+
+### 7.1 초기 허용 도구
+
+| 도구 | 설명 | 위험도 |
+|---|---|---|
+| `search_docs` | RAG vector store에서 문서 검색 | 낮음 |
+| `summarize_context` | 검색 결과 요약 | 낮음 |
+| `inspect_conversation` | 현재 대화 history 요약 | 낮음 |
+
+### 7.2 초기 금지 도구
+
+- shell 실행
+- 파일 쓰기/삭제
+- 외부 이메일 전송
+- 결제/구매
+- credential 조회
+- 사용자의 로컬 파일 무단 읽기
+
+### 7.3 도구 schema 요구사항
+
+각 도구는 다음 정보를 가진다.
+
+```json
+{
+  "name": "search_docs",
+  "description": "RAG 문서에서 관련 chunk를 검색한다.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "query": {"type": "string"}
+    },
+    "required": ["query"]
+  },
+  "timeout_seconds": 10,
+  "requires_approval": false
+}
+```
+
+도구 입력은 실행 전 JSON schema로 검증한다. 검증 실패는 LLM에 다시 고칠 기회를 주되, 같은 step에서 1회만 재시도한다.
+
+## 8. 기능 요구사항
+
+| ID | 요구사항 |
+|---|---|
+| P3-Plan-01 | planner는 goal을 2~8개 step으로 분해한다. |
+| P3-Plan-02 | 각 step은 id, title, description, tool, args, status를 가진다. |
+| P3-Exec-01 | executor는 한 요청에서 `max_steps`까지만 실행한다. |
+| P3-Exec-02 | 도구 결과는 progress와 trace에 저장한다. |
+| P3-State-01 | Redis state는 TTL 24시간을 가진다. |
+| P3-State-02 | `task_id`로 작업을 조회하고 이어서 실행할 수 있다. |
+| P3-Safe-01 | 위험 도구는 approval 없이 실행하지 않는다. |
+| P3-UI-01 | 프론트는 plan/task/tool/approval 이벤트를 각각 UI 컴포넌트에 매핑한다. |
+
+## 9. 예외 처리
+
+| 케이스 | 처리 |
+|---|---|
+| planner JSON parse 실패 | 같은 prompt로 1회 재시도, 실패 시 error event |
+| 없는 tool 호출 | tool error를 observation으로 기록하고 다음 판단 요청 |
+| tool timeout | step failed, 사용자에게 재시도 가능 안내 |
+| Redis 연결 실패 | agent start/continue 실패 처리 |
+| task state 만료 | 404와 "작업 상태가 만료되었습니다" |
+| approval 거절 | step skipped, plan 상태 갱신 |
+| max_steps 초과 | partial result와 다음 pending step 안내 |
+
+## 10. 프론트 UI 요구사항
+
+- Plan은 접을 수 있는 단계 목록으로 표시한다.
+- 현재 실행 중 step은 loading 상태를 가진다.
+- tool call은 도구 이름과 입력 요약을 표시한다.
+- tool result는 긴 출력이면 접힌 상태로 표시한다.
+- approval required는 사용자가 승인/거절을 명확히 선택할 수 있어야 한다.
+- agent task가 만료되면 이어서 진행 버튼을 비활성화한다.
+
+## 11. 테스트 전략
+
+| 테스트 | 검증 내용 |
+|---|---|
+| planner unit | goal -> step schema validation |
+| tool registry unit | schema validation, unknown tool 처리 |
+| state unit | Redis mock 기반 save/get/expire |
+| executor unit | max_steps, timeout, failed step 처리 |
+| endpoint integration | start/continue/approve event shape |
+| frontend component | plan/task/tool/confirmation 렌더링 |
+
+## 12. 완료 기준
+
+- [ ] `/api/v1/agent/start`가 plan 이벤트를 반환한다.
+- [ ] `search_docs` 도구 호출과 결과가 스트리밍된다.
+- [ ] `task_id`로 작업 상태를 조회할 수 있다.
+- [ ] `max_steps` 제한이 동작한다.
+- [ ] 승인 필요 step은 승인 전 실행되지 않는다.
+- [ ] Redis state 만료 시 안전한 오류를 반환한다.
+- [ ] 프론트에서 plan/task/tool/approval UI가 표시된다.
+
+## 13. 작업 Task 분리
+
+1. Agent event/type 계약 정의
+2. Tool registry와 초기 safe tool 구현
+3. Redis state store 구현
+4. Planner 구현
+5. Executor/ReAct loop 구현
+6. Agent endpoint 추가
+7. Frontend `streamAgent()` 추가
+8. Chat message renderer에 plan/task/tool event 연결
+9. Approval UI와 `/approve` 연결
+10. backend/frontend 테스트 추가
+
+## 14. Phase 4와의 연결
+
+Agent는 도구 호출과 장기 상태를 다루기 때문에 Phase 4의 안전성 요구사항과 강하게 연결된다. 특히 tool input validation, trace 기록, PII 마스킹, verifier는 Agent 기능을 실서비스 수준으로 올리기 전에 반드시 붙어야 한다.
